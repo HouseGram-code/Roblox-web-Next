@@ -1,0 +1,8 @@
+node_modules
+.git
+.angular
+dist
+metadata.json
+index.html
+src/services/firebase.service.ts
+src/services/audio.service.ts
