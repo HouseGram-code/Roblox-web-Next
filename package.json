@@ -1,28 +1,32 @@
 {
   "name": "roblox-next",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "1.0.0",
+  "description": "Roblox Next - A 3D immersive platform",
   "scripts": {
-    "dev": "ng serve",
-    "build": "ng build",
-    "preview": "ng serve --configuration=production"
+    "start": "vite",
+    "build": "vite build"
   },
   "dependencies": {
-    "rxjs": "^7.8.2",
-    "@angular/compiler": "^21.1.0",
-    "@angular/platform-browser": "^21.1.0",
-    "@angular/core": "^21.1.0",
+    "@angular/common": "^21.1.4",
+    "@angular/compiler": "^21.1.4",
+    "@angular/core": "^21.1.4",
     "@angular/forms": "^21.1.4",
-    "@angular/common": "^21.1.0",
-    "@angular/build": "^21.1.0",
-    "@angular/cli": "^21.1.0",
-    "@angular/compiler-cli": "^21.1.0",
-    "tailwindcss": "latest"
+    "@angular/platform-browser": "^21.1.4",
+    "firebase": "^10.7.1",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "@angular/build": "^21.1.4",
+    "@angular/cli": "^21.1.4",
+    "@angular/compiler-cli": "^21.1.4",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "5.9.2",
+    "vite": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.13.0"
   }
 }

@@ -1,4 +1,3 @@
-
 import { Component, computed, signal, effect, ViewChild, ElementRef, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +13,6 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
   imports: [CommonModule, LoginComponent, FormsModule],
   templateUrl: './app.component.html'
 })

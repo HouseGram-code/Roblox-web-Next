@@ -6,7 +6,6 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
   imports: [FormsModule, CommonModule],
   template: `
     <div class="fixed inset-0 bg-gradient-to-br from-[#1a1a2e] to-[#16213e] flex items-center justify-center z-50">
@@ -88,13 +87,6 @@ export class LoginComponent {
 
         if (existingProfile) {
             // Login with existing
-            // If they changed the nickname in the input, we could update it, 
-            // but standard flow is usually keep DB one unless updated in profile.
-            // For this seamless flow: if nickname matches DB, just login. 
-            // If different, we can treat it as a login request.
-            
-            // We'll trust the DB profile for the avatar/items, but maybe they want to update nick?
-            // Let's just load the DB profile for consistency.
             this.dataService.setUser(existingProfile);
         } else {
             // Registration: Create new
