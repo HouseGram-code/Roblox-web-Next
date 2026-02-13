@@ -1,4 +1,4 @@
-import { Component, computed, signal, effect, ViewChild, ElementRef, OnDestroy, untracked, inject } from '@angular/core';
+import { Component, computed, signal, effect, ViewChild, ElementRef, OnDestroy, untracked, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from './services/data.service';
@@ -13,7 +13,9 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [CommonModule, LoginComponent, FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
 @if (currentView() === 'LOGIN') {
   <app-login (loginSuccess)="onLoginSuccess()"></app-login>
@@ -217,6 +219,7 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
     class="fixed inset-0 z-0 touch-none"
     (touchstart)="handleTouchLookStart($event)"
     (touchmove)="handleTouchLookMove($event)"
+    (touchend)="handleTouchLookEnd($event)"
   >
     <div #gameContainer class="w-full h-full"></div>
   </div>
@@ -617,141 +620,102 @@ export class AppComponent implements OnDestroy {
   dataService = inject(DataService);
   threeGame = inject(ThreeGameService);
   threeProfile = inject(ThreeProfileService);
-  audio = inject(AudioService);
+  audioService = inject(AudioService);
   firebaseService = inject(FirebaseService);
 
   // View State
   currentView = signal<View>('LOGIN');
   showGameModal = signal(false);
-  
-  // Game Menu State
   isMenuOpen = signal(false);
   activeMenuTab = signal<MenuTab>('PLAYERS');
   
-  // Chat State
-  isChatVisible = signal(false);
-  chatInput = '';
-  // Derived chat state
-  chatMessages = this.firebaseService.chatMessages;
-  unreadMessagesCount = signal(0);
-  
-  // Profile State
-  isEditingProfile = signal(false);
-  editName = '';
-  editDesc = '';
-
-  // Game Stats (from Firebase)
-  onlineCount = this.firebaseService.onlineCount;
-  gameStats = this.firebaseService.gameStats;
-  ratingPercentage = computed(() => {
-    const s = this.gameStats();
-    const total = (s.likes || 0) + (s.dislikes || 0);
-    if (total === 0) return 100;
-    return Math.round((s.likes / total) * 100);
-  });
-  hasVoted = signal(false);
-
-  // ThreeJS Containers
-  @ViewChild('profileContainer') profileContainer?: ElementRef;
-  @ViewChild('gameContainer') gameContainer?: ElementRef;
-  
-  // Mobile Input
-  joystickTransform = signal('translate(0px, 0px)');
-  private joystickActive = false;
-  private joystickOrigin = { x: 0, y: 0 };
-
-  // Game State Proxy (to use in template)
+  // Game State Proxies (Signals from ThreeGameService)
   isLoading = this.threeGame.isLoading;
   loadingProgress = this.threeGame.loadingProgress;
   loadingStatus = this.threeGame.loadingStatus;
   isVictory = this.threeGame.isVictory;
   showCheckpoint = this.threeGame.showCheckpointMsg;
 
-  // Settings Proxy
-  currentGraphics = signal<'low'|'medium'|'high'>('high');
-  currentCameraMode = signal<'first'|'third'>('third');
+  // Chat
+  isChatVisible = signal(false);
+  chatInput = '';
+  chatMessages = this.firebaseService.chatMessages;
+  unreadMessagesCount = signal(0);
+  
+  // Profile
+  isEditingProfile = signal(false);
+  editName = '';
+  editDesc = '';
 
-  // Helper for template
+  // Discovery
+  gameStats = this.firebaseService.gameStats;
+  hasVoted = signal(false);
+
+  // References
+  @ViewChild('gameContainer') gameContainer!: ElementRef;
+  @ViewChild('profileContainer') profileContainer!: ElementRef;
+  @ViewChild('joystickZone') joystickZone!: ElementRef;
+
+  // Computed
+  onlineCount = this.firebaseService.onlineCount;
+  
+  ratingPercentage = computed(() => {
+    const s = this.gameStats();
+    const total = (s.likes || 0) + (s.dislikes || 0);
+    if (total === 0) return 100;
+    return Math.round((s.likes / total) * 100);
+  });
+
+  currentCameraMode = signal<'first' | 'third'>('third');
+  currentGraphics = signal<'low' | 'medium' | 'high'>('high');
+
+  // Helpers
   hudUser = this.dataService.user;
 
+  // Mobile Input
+  joystickActive = false;
+  joystickStartPos = { x: 0, y: 0 };
+  joystickCurrentPos = { x: 0, y: 0 };
+  joystickTransform = signal('translate(0px, 0px)');
+
+  // Touch Look State
+  private lastTouchX = 0;
+  private lastTouchY = 0;
+  private lookTouchId: number | null = null;
+  
   constructor() {
-    // Effect to handle unread messages
     effect(() => {
+        // Chat listener
         const msgs = this.chatMessages();
         if (!this.isChatVisible() && msgs.length > 0) {
-            // Simple increment if new message comes in and chat is closed
-            untracked(() => {
-                 // Logic to detect NEW messages only would require storing last read count
-                 // For simplicity, just showing a count if not visible
-                 this.unreadMessagesCount.update(c => c + 1);
-            });
+             this.unreadMessagesCount.update(c => c + 1);
         }
     });
-
-    // Effect to initialize Profile 3D view when container becomes available
-    effect(() => {
-        if (this.currentView() === 'PROFILE' && this.profileContainer) {
-            // Small timeout to ensure DOM is ready
-            setTimeout(() => {
-                if (this.profileContainer) {
-                   this.threeProfile.init(this.profileContainer.nativeElement);
-                }
-            }, 100);
-        } else {
-            this.threeProfile.cleanup();
-        }
-    });
-  }
-
-  ngOnDestroy() {
-      this.threeGame.cleanup();
-      this.threeProfile.cleanup();
-      this.firebaseService.leaveGame();
   }
 
   onLoginSuccess() {
-    this.currentView.set('DISCOVERY');
+      this.currentView.set('DISCOVERY');
   }
 
   navTo(view: View) {
-    if (this.currentView() === 'GAME') {
-        // If leaving game, cleanup
-        this.exitGame();
-    }
+    if (this.currentView() === 'GAME') return; // Must exit game first
     this.currentView.set(view);
     
-    // Reset Profile Edit state
-    this.isEditingProfile.set(false);
+    if (view === 'PROFILE') {
+        setTimeout(() => this.initProfilePreview(), 100);
+    } else {
+        this.threeProfile.cleanup();
+    }
   }
 
-  // --- Profile Logic ---
-  toggleEditProfile() {
-      if (this.isEditingProfile()) {
-          // Save
-          this.dataService.updateProfile(this.editName, this.editDesc);
-          this.isEditingProfile.set(false);
-          // Sync with Firebase if needed (FirebaseService could have updateProfile)
-          // For now local state + DataService
-          const u = this.dataService.user();
-          this.firebaseService.saveUserProfile(u);
-      } else {
-          // Edit
-          const u = this.dataService.user();
-          this.editName = u.username;
-          this.editDesc = u.description;
-          this.isEditingProfile.set(true);
+  initProfilePreview() {
+      if (this.profileContainer) {
+          this.threeProfile.init(this.profileContainer.nativeElement);
       }
   }
 
-  equip(itemId: string, type: 'face' | 'clothes' | 'accessory') {
-      this.dataService.equipItem(itemId, type);
-      this.threeProfile.updateAppearance();
-      
-      const u = this.dataService.user();
-      this.firebaseService.saveUserProfile(u);
-  }
-
-  // --- Game Launcher ---
+  // --- Game Modal & Launch ---
+  
   openGameModal(id: string) {
       this.showGameModal.set(true);
   }
@@ -761,7 +725,7 @@ export class AppComponent implements OnDestroy {
   }
 
   async playGame() {
-      this.showGameModal.set(false);
+      this.closeGameModal();
       this.currentView.set('GAME');
       
       // Init Game
@@ -769,41 +733,56 @@ export class AppComponent implements OnDestroy {
           if (this.gameContainer) {
               this.threeGame.init(this.gameContainer.nativeElement);
               this.threeGame.loadLevel();
-              this.threeGame.isPlaying.set(true);
-              
-              // Join Network
-              // Get clothes color from item
-              const clothesId = this.dataService.user().avatar.clothes;
-              const item = this.dataService.getItem(clothesId);
-              this.firebaseService.joinGame(this.dataService.user(), item?.color);
+              this.threeGame.isPlaying.set(true); // Enable logic
+              this.firebaseService.joinGame(this.dataService.user(), this.dataService.getItem(this.dataService.user().avatar.clothes)?.color);
           }
       }, 100);
+      
+      this.threeGame.requestPointerLock();
   }
 
   exitGame() {
       this.threeGame.cleanup();
-      this.threeGame.isPlaying.set(false);
       this.firebaseService.leaveGame();
-      this.currentView.set('DISCOVERY');
+      this.threeGame.isPlaying.set(false);
+      this.isVictory.set(false);
       this.isMenuOpen.set(false);
-      this.isVictory.set(false);
-      
-      // Unlock cursor
-      document.exitPointerLock();
+      this.currentView.set('DISCOVERY');
+      this.threeGame.exitPointerLock();
   }
-
+  
   replay() {
-      this.threeGame.loadLevel();
+      this.threeGame.resetCharacter();
       this.isVictory.set(false);
+      this.threeGame.requestPointerLock();
   }
 
-  // --- In-Game UI ---
+  // --- Profile Logic ---
+  toggleEditProfile() {
+      if (this.isEditingProfile()) {
+          // Save
+          this.dataService.updateProfile(this.editName, this.editDesc);
+          this.isEditingProfile.set(false);
+      } else {
+          // Start Edit
+          this.editName = this.dataService.user().username;
+          this.editDesc = this.dataService.user().description;
+          this.isEditingProfile.set(true);
+      }
+  }
+
+  equip(itemId: string, type: 'face' | 'clothes' | 'accessory') {
+      this.dataService.equipItem(itemId, type);
+      this.threeProfile.updateAppearance();
+  }
+
+  // --- In-Game Menu & HUD ---
+
   toggleGameMenu() {
       this.isMenuOpen.update(v => !v);
       if (this.isMenuOpen()) {
           this.threeGame.exitPointerLock();
       } else {
-          // Resume game focus
           this.threeGame.requestPointerLock();
       }
   }
@@ -811,30 +790,11 @@ export class AppComponent implements OnDestroy {
   setMenuTab(tab: MenuTab) {
       this.activeMenuTab.set(tab);
   }
-  
-  // Settings
-  setGraphics(level: 'low'|'medium'|'high') {
-      this.currentGraphics.set(level);
-      this.threeGame.setGraphicsQuality(level);
-  }
 
-  setCameraMode(mode: 'first'|'third') {
-      this.currentCameraMode.set(mode);
-      this.threeGame.setCameraMode(mode);
-  }
-
-  resetCharacter() {
-      this.threeGame.resetCharacter();
-      this.isMenuOpen.set(false);
-      this.threeGame.requestPointerLock();
-  }
-
-  // --- Chat ---
   toggleChat() {
       this.isChatVisible.update(v => !v);
       if (this.isChatVisible()) {
           this.unreadMessagesCount.set(0);
-          // Focus input handled by template logic or user click
       }
   }
 
@@ -842,98 +802,136 @@ export class AppComponent implements OnDestroy {
       if (!this.chatInput.trim()) return;
       this.firebaseService.sendMessage(this.dataService.user().username, this.chatInput);
       
-      // Show bubble locally immediately for responsiveness (optional, but good for UX)
+      // Show bubble locally immediately for responsiveness
       this.threeGame.showChatBubble(this.dataService.user().username, this.chatInput);
-
+      
       this.chatInput = '';
   }
 
   onChatFocus() {
-      // Maybe disable game controls
+      // Logic for typing state can go here
   }
   
   onChatBlur() {
-      // Re-enable game controls
+      if (!this.isMenuOpen() && !this.joystickActive) {
+          this.threeGame.requestPointerLock();
+      }
   }
-  
-  // --- Voting ---
+
   vote(type: 'like' | 'dislike') {
       if (this.hasVoted()) return;
       this.firebaseService.voteGame(type);
       this.hasVoted.set(true);
   }
 
+  // --- Settings ---
+  setCameraMode(mode: 'first' | 'third') {
+      this.currentCameraMode.set(mode);
+      this.threeGame.setCameraMode(mode);
+  }
+
+  setGraphics(level: 'low' | 'medium' | 'high') {
+      this.currentGraphics.set(level);
+      this.threeGame.setGraphicsQuality(level);
+  }
+  
+  resetCharacter() {
+      this.threeGame.resetCharacter();
+      this.toggleGameMenu();
+  }
+
   // --- Mobile Controls ---
+
+  handleTouchLookStart(e: TouchEvent) {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const t = e.changedTouches[i];
+      // If touch is on the right half of the screen and we don't have a look touch yet
+      if (t.clientX > window.innerWidth / 2 && this.lookTouchId === null) {
+        this.lookTouchId = t.identifier;
+        this.lastTouchX = t.clientX;
+        this.lastTouchY = t.clientY;
+        break; 
+      }
+    }
+  }
+
+  handleTouchLookMove(e: TouchEvent) {
+    if (this.lookTouchId === null) return;
+
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const t = e.changedTouches[i];
+      if (t.identifier === this.lookTouchId) {
+        const deltaX = t.clientX - this.lastTouchX;
+        const deltaY = t.clientY - this.lastTouchY;
+        
+        this.threeGame.updateMobileLook(deltaX, deltaY);
+        
+        this.lastTouchX = t.clientX;
+        this.lastTouchY = t.clientY;
+        break;
+      }
+    }
+  }
+
+  handleTouchLookEnd(e: TouchEvent) {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === this.lookTouchId) {
+              this.lookTouchId = null;
+          }
+      }
+  }
+
   handleJoystickStart(e: TouchEvent) {
-      this.joystickActive = true;
+      e.preventDefault();
       const touch = e.changedTouches[0];
-      this.joystickOrigin = { x: touch.clientX, y: touch.clientY };
+      this.joystickActive = true;
+      this.joystickStartPos = { x: touch.clientX, y: touch.clientY };
+      this.joystickCurrentPos = { ...this.joystickStartPos };
+      this.updateJoystickVisual();
   }
 
   handleJoystickMove(e: TouchEvent) {
+      e.preventDefault();
       if (!this.joystickActive) return;
       const touch = e.changedTouches[0];
+      this.joystickCurrentPos = { x: touch.clientX, y: touch.clientY };
+      this.updateJoystickVisual();
+  }
+
+  handleJoystickEnd(e: TouchEvent) {
+      e.preventDefault();
+      this.joystickActive = false;
+      this.joystickTransform.set(`translate(0px, 0px)`);
+      this.threeGame.updateMobileJoystick(0, 0);
+  }
+
+  updateJoystickVisual() {
+      // Calculate delta
+      let dx = this.joystickCurrentPos.x - this.joystickStartPos.x;
+      let dy = this.joystickCurrentPos.y - this.joystickStartPos.y;
       
+      // Clamp magnitude
       const maxDist = 40;
-      let dx = touch.clientX - this.joystickOrigin.x;
-      let dy = touch.clientY - this.joystickOrigin.y;
-      
       const dist = Math.sqrt(dx*dx + dy*dy);
       if (dist > maxDist) {
           dx = (dx / dist) * maxDist;
           dy = (dy / dist) * maxDist;
       }
       
+      // Update visual
       this.joystickTransform.set(`translate(${dx}px, ${dy}px)`);
       
-      // Normalize to -1..1
-      const nx = dx / maxDist;
-      const ny = dy / maxDist; // Up is negative in screen coords, but we want Forward (usually -1)
-      
-      this.threeGame.updateMobileJoystick(nx, -ny);
-  }
-
-  handleJoystickEnd(e: TouchEvent) {
-      this.joystickActive = false;
-      this.joystickTransform.set(`translate(0px, 0px)`);
-      this.threeGame.updateMobileJoystick(0, 0);
+      // Update Game Input (Normalized -1 to 1)
+      this.threeGame.updateMobileJoystick(dx / maxDist, -(dy / maxDist)); // Invert Y for standard forward
   }
 
   handleMobileJump(e: TouchEvent) {
+      e.preventDefault();
       this.threeGame.doJump();
   }
-
-  // Mobile Look (Touch anywhere else)
-  private lookTouchId: number | null = null;
-  private lookOrigin = { x: 0, y: 0 };
-
-  handleTouchLookStart(e: TouchEvent) {
-      // Avoid conflict with joystick
-      for (let i=0; i<e.changedTouches.length; i++) {
-          const t = e.changedTouches[i];
-          // Check if it's on right side or not inside joystick
-          // Simple heuristic: if x > windowWidth/2 or not joystick
-          if (t.clientX > window.innerWidth / 2) {
-              this.lookTouchId = t.identifier;
-              this.lookOrigin = { x: t.clientX, y: t.clientY };
-              break;
-          }
-      }
-  }
-
-  handleTouchLookMove(e: TouchEvent) {
-      if (this.lookTouchId === null) return;
-      for (let i=0; i<e.changedTouches.length; i++) {
-          const t = e.changedTouches[i];
-          if (t.identifier === this.lookTouchId) {
-              const dx = t.clientX - this.lookOrigin.x;
-              const dy = t.clientY - this.lookOrigin.y;
-              
-              this.threeGame.updateMobileLook(dx, dy);
-              
-              this.lookOrigin = { x: t.clientX, y: t.clientY };
-              break;
-          }
-      }
+  
+  ngOnDestroy() {
+      this.threeGame.cleanup();
+      this.threeProfile.cleanup();
   }
 }
