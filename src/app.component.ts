@@ -1,4 +1,4 @@
-import { Component, computed, signal, effect, ViewChild, ElementRef, OnDestroy, untracked } from '@angular/core';
+import { Component, computed, signal, effect, ViewChild, ElementRef, OnDestroy, untracked, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from './services/data.service';
@@ -613,108 +613,115 @@ Tags: Obby, Parkour, Fun, Rainbow, Mega, Easy, Platformer.
 `
 })
 export class AppComponent implements OnDestroy {
+  // Services
+  dataService = inject(DataService);
+  threeGame = inject(ThreeGameService);
+  threeProfile = inject(ThreeProfileService);
+  audio = inject(AudioService);
+  firebaseService = inject(FirebaseService);
+
   // View State
   currentView = signal<View>('LOGIN');
+  showGameModal = signal(false);
+  
+  // Game Menu State
   isMenuOpen = signal(false);
   activeMenuTab = signal<MenuTab>('PLAYERS');
-  showGameModal = signal(false);
+  
+  // Chat State
+  isChatVisible = signal(false);
+  chatInput = '';
+  // Derived chat state
+  chatMessages = this.firebaseService.chatMessages;
+  unreadMessagesCount = signal(0);
   
   // Profile State
   isEditingProfile = signal(false);
   editName = '';
   editDesc = '';
-  
-  // Game State
-  gameStats = computed(() => this.firebaseService.gameStats());
-  onlineCount = computed(() => this.firebaseService.onlineCount());
-  hasVoted = signal(false);
+
+  // Game Stats (from Firebase)
+  onlineCount = this.firebaseService.onlineCount;
+  gameStats = this.firebaseService.gameStats;
   ratingPercentage = computed(() => {
     const s = this.gameStats();
     const total = (s.likes || 0) + (s.dislikes || 0);
     if (total === 0) return 100;
     return Math.round((s.likes / total) * 100);
   });
-  
-  hudUser = this.dataService.user;
+  hasVoted = signal(false);
 
-  // Chat State
-  isChatVisible = signal(false);
-  chatInput = '';
-  unreadMessagesCount = signal(0);
-  chatMessages = this.firebaseService.chatMessages;
+  // ThreeJS Containers
+  @ViewChild('profileContainer') profileContainer?: ElementRef;
+  @ViewChild('gameContainer') gameContainer?: ElementRef;
   
-  // Graphics & Camera
-  currentCameraMode = signal<'first' | 'third'>('third');
-  currentGraphics = signal<'low' | 'medium' | 'high'>('high');
+  // Mobile Input
+  joystickTransform = signal('translate(0px, 0px)');
+  private joystickActive = false;
+  private joystickOrigin = { x: 0, y: 0 };
 
-  // Mobile Input Signals
-  joystickTransform = signal('');
-  
-  // Service signals exposed for template
+  // Game State Proxy (to use in template)
   isLoading = this.threeGame.isLoading;
-  loadingStatus = this.threeGame.loadingStatus;
   loadingProgress = this.threeGame.loadingProgress;
+  loadingStatus = this.threeGame.loadingStatus;
   isVictory = this.threeGame.isVictory;
   showCheckpoint = this.threeGame.showCheckpointMsg;
 
-  // References
-  @ViewChild('gameContainer') gameContainer!: ElementRef;
-  @ViewChild('profileContainer') profileContainer!: ElementRef;
-  @ViewChild('joystickZone') joystickZone!: ElementRef;
+  // Settings Proxy
+  currentGraphics = signal<'low'|'medium'|'high'>('high');
+  currentCameraMode = signal<'first'|'third'>('third');
 
-  constructor(
-    public dataService: DataService,
-    public firebaseService: FirebaseService,
-    private threeGame: ThreeGameService,
-    private threeProfile: ThreeProfileService,
-    private audio: AudioService
-  ) {
-    // Effects
+  // Helper for template
+  hudUser = this.dataService.user;
+
+  constructor() {
+    // Effect to handle unread messages
     effect(() => {
-       // Profile View Initialization
-       if (this.currentView() === 'PROFILE') {
-         setTimeout(() => {
-            if(this.profileContainer) this.threeProfile.init(this.profileContainer.nativeElement);
-         }, 50);
-       } else {
-         this.threeProfile.cleanup();
-       }
+        const msgs = this.chatMessages();
+        if (!this.isChatVisible() && msgs.length > 0) {
+            // Simple increment if new message comes in and chat is closed
+            untracked(() => {
+                 // Logic to detect NEW messages only would require storing last read count
+                 // For simplicity, just showing a count if not visible
+                 this.unreadMessagesCount.update(c => c + 1);
+            });
+        }
     });
 
+    // Effect to initialize Profile 3D view when container becomes available
     effect(() => {
-       // Game View Cleanup
-       if (this.currentView() !== 'GAME') {
-           this.threeGame.cleanup();
-           this.threeGame.exitPointerLock();
-       }
-    });
-    
-    // Auto-focus chat or handle message arrival
-    effect(() => {
-         const msgs = this.chatMessages();
-         if (!this.isChatVisible() && msgs.length > 0) {
-             // Logic to increment unread count could go here, simplified by just tracking length changes if needed
-             // For now unreadMessagesCount is manual or requires tracking read index.
-             // We'll leave it simple.
-         }
+        if (this.currentView() === 'PROFILE' && this.profileContainer) {
+            // Small timeout to ensure DOM is ready
+            setTimeout(() => {
+                if (this.profileContainer) {
+                   this.threeProfile.init(this.profileContainer.nativeElement);
+                }
+            }, 100);
+        } else {
+            this.threeProfile.cleanup();
+        }
     });
   }
-  
+
   ngOnDestroy() {
-    this.threeGame.cleanup();
-    this.threeProfile.cleanup();
+      this.threeGame.cleanup();
+      this.threeProfile.cleanup();
+      this.firebaseService.leaveGame();
   }
 
   onLoginSuccess() {
-      this.currentView.set('DISCOVERY');
-      this.audio.unlockAudio(); 
+    this.currentView.set('DISCOVERY');
   }
 
   navTo(view: View) {
-      if (this.currentView() === 'GAME') {
-          this.exitGame();
-      }
-      this.currentView.set(view);
+    if (this.currentView() === 'GAME') {
+        // If leaving game, cleanup
+        this.exitGame();
+    }
+    this.currentView.set(view);
+    
+    // Reset Profile Edit state
+    this.isEditingProfile.set(false);
   }
 
   // --- Profile Logic ---
@@ -723,11 +730,12 @@ export class AppComponent implements OnDestroy {
           // Save
           this.dataService.updateProfile(this.editName, this.editDesc);
           this.isEditingProfile.set(false);
-          // Sync to Firebase? Handled by DataService effect mostly, or explicitly:
+          // Sync with Firebase if needed (FirebaseService could have updateProfile)
+          // For now local state + DataService
           const u = this.dataService.user();
           this.firebaseService.saveUserProfile(u);
       } else {
-          // Start Edit
+          // Edit
           const u = this.dataService.user();
           this.editName = u.username;
           this.editDesc = u.description;
@@ -738,11 +746,13 @@ export class AppComponent implements OnDestroy {
   equip(itemId: string, type: 'face' | 'clothes' | 'accessory') {
       this.dataService.equipItem(itemId, type);
       this.threeProfile.updateAppearance();
+      
+      const u = this.dataService.user();
+      this.firebaseService.saveUserProfile(u);
   }
 
-  // --- Game Modal Logic ---
+  // --- Game Launcher ---
   openGameModal(id: string) {
-      // In a real app we'd load game data by ID
       this.showGameModal.set(true);
   }
 
@@ -750,33 +760,50 @@ export class AppComponent implements OnDestroy {
       this.showGameModal.set(false);
   }
 
-  playGame() {
-    this.closeGameModal();
-    this.currentView.set('GAME');
-    
-    // Init Game
-    setTimeout(() => {
-        if (this.gameContainer) {
-            this.threeGame.init(this.gameContainer.nativeElement);
-            this.threeGame.loadLevel();
-            this.threeGame.requestPointerLock();
-            this.firebaseService.joinGame(this.dataService.user());
-        }
-    }, 50);
-  }
-  
-  vote(type: 'like' | 'dislike') {
-    if (this.hasVoted()) return;
-    this.firebaseService.voteGame(type);
-    this.hasVoted.set(true);
+  async playGame() {
+      this.showGameModal.set(false);
+      this.currentView.set('GAME');
+      
+      // Init Game
+      setTimeout(() => {
+          if (this.gameContainer) {
+              this.threeGame.init(this.gameContainer.nativeElement);
+              this.threeGame.loadLevel();
+              this.threeGame.isPlaying.set(true);
+              
+              // Join Network
+              // Get clothes color from item
+              const clothesId = this.dataService.user().avatar.clothes;
+              const item = this.dataService.getItem(clothesId);
+              this.firebaseService.joinGame(this.dataService.user(), item?.color);
+          }
+      }, 100);
   }
 
-  // --- In-Game Menu & Logic ---
+  exitGame() {
+      this.threeGame.cleanup();
+      this.threeGame.isPlaying.set(false);
+      this.firebaseService.leaveGame();
+      this.currentView.set('DISCOVERY');
+      this.isMenuOpen.set(false);
+      this.isVictory.set(false);
+      
+      // Unlock cursor
+      document.exitPointerLock();
+  }
+
+  replay() {
+      this.threeGame.loadLevel();
+      this.isVictory.set(false);
+  }
+
+  // --- In-Game UI ---
   toggleGameMenu() {
       this.isMenuOpen.update(v => !v);
       if (this.isMenuOpen()) {
           this.threeGame.exitPointerLock();
       } else {
+          // Resume game focus
           this.threeGame.requestPointerLock();
       }
   }
@@ -785,123 +812,128 @@ export class AppComponent implements OnDestroy {
       this.activeMenuTab.set(tab);
   }
   
-  setCameraMode(mode: 'first' | 'third') {
-      this.currentCameraMode.set(mode);
-      this.threeGame.setCameraMode(mode);
-  }
-  
-  setGraphics(level: 'low' | 'medium' | 'high') {
+  // Settings
+  setGraphics(level: 'low'|'medium'|'high') {
       this.currentGraphics.set(level);
       this.threeGame.setGraphicsQuality(level);
   }
-  
+
+  setCameraMode(mode: 'first'|'third') {
+      this.currentCameraMode.set(mode);
+      this.threeGame.setCameraMode(mode);
+  }
+
   resetCharacter() {
       this.threeGame.resetCharacter();
       this.isMenuOpen.set(false);
       this.threeGame.requestPointerLock();
   }
 
-  exitGame() {
-    this.threeGame.cleanup();
-    this.threeGame.exitPointerLock();
-    this.currentView.set('DISCOVERY');
-    this.isMenuOpen.set(false);
-    this.isVictory.set(false);
-    this.audio.stopMusic();
-  }
-  
-  replay() {
-      this.isVictory.set(false);
-      this.threeGame.resetCharacter();
-      this.threeGame.requestPointerLock();
-  }
-
   // --- Chat ---
   toggleChat() {
       this.isChatVisible.update(v => !v);
-      this.unreadMessagesCount.set(0);
-  }
-  
-  onChatFocus() {
-      // Input focused
-  }
-  
-  onChatBlur() {
-      // Input blurred
+      if (this.isChatVisible()) {
+          this.unreadMessagesCount.set(0);
+          // Focus input handled by template logic or user click
+      }
   }
 
   sendMessage() {
       if (!this.chatInput.trim()) return;
+      this.firebaseService.sendMessage(this.dataService.user().username, this.chatInput);
       
-      const username = this.dataService.user().username;
-      
-      // Send to firebase
-      this.firebaseService.sendMessage(username, this.chatInput);
-      
-      // Show Chat Bubble locally and hopefully remotely via firebase listener in ThreeGameService
-      this.threeGame.showChatBubble(username, this.chatInput);
-      
+      // Show bubble locally immediately for responsiveness (optional, but good for UX)
+      this.threeGame.showChatBubble(this.dataService.user().username, this.chatInput);
+
       this.chatInput = '';
   }
 
-  // --- Mobile Controls ---
-  private joystickStart = { x: 0, y: 0 };
-  private isJoystickActive = false;
+  onChatFocus() {
+      // Maybe disable game controls
+  }
+  
+  onChatBlur() {
+      // Re-enable game controls
+  }
+  
+  // --- Voting ---
+  vote(type: 'like' | 'dislike') {
+      if (this.hasVoted()) return;
+      this.firebaseService.voteGame(type);
+      this.hasVoted.set(true);
+  }
 
+  // --- Mobile Controls ---
   handleJoystickStart(e: TouchEvent) {
-     this.isJoystickActive = true;
-     const touch = e.changedTouches[0];
-     this.joystickStart = { x: touch.clientX, y: touch.clientY };
+      this.joystickActive = true;
+      const touch = e.changedTouches[0];
+      this.joystickOrigin = { x: touch.clientX, y: touch.clientY };
   }
 
   handleJoystickMove(e: TouchEvent) {
-     if (!this.isJoystickActive) return;
-     const touch = e.changedTouches[0];
-     const maxRadius = 40;
-     
-     let dx = touch.clientX - this.joystickStart.x;
-     let dy = touch.clientY - this.joystickStart.y;
-     
-     const dist = Math.sqrt(dx*dx + dy*dy);
-     if (dist > maxRadius) {
-         const angle = Math.atan2(dy, dx);
-         dx = Math.cos(angle) * maxRadius;
-         dy = Math.sin(angle) * maxRadius;
-     }
-     
-     this.joystickTransform.set(`translate(${dx}px, ${dy}px)`);
-     
-     // In screen coords: -y is forward (drag up), +x is right
-     this.threeGame.updateMobileJoystick(dx / maxRadius, -(dy / maxRadius));
+      if (!this.joystickActive) return;
+      const touch = e.changedTouches[0];
+      
+      const maxDist = 40;
+      let dx = touch.clientX - this.joystickOrigin.x;
+      let dy = touch.clientY - this.joystickOrigin.y;
+      
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > maxDist) {
+          dx = (dx / dist) * maxDist;
+          dy = (dy / dist) * maxDist;
+      }
+      
+      this.joystickTransform.set(`translate(${dx}px, ${dy}px)`);
+      
+      // Normalize to -1..1
+      const nx = dx / maxDist;
+      const ny = dy / maxDist; // Up is negative in screen coords, but we want Forward (usually -1)
+      
+      this.threeGame.updateMobileJoystick(nx, -ny);
   }
 
   handleJoystickEnd(e: TouchEvent) {
-     this.isJoystickActive = false;
-     this.joystickTransform.set('');
-     this.threeGame.updateMobileJoystick(0, 0);
-  }
-  
-  private lastLookTouch = { x: 0, y: 0 };
-  
-  handleTouchLookStart(e: TouchEvent) {
-      const touch = e.changedTouches[0];
-      this.lastLookTouch = { x: touch.clientX, y: touch.clientY };
-  }
-  
-  handleTouchLookMove(e: TouchEvent) {
-      if (e.cancelable) e.preventDefault();
-      
-      const touch = e.changedTouches[0];
-      const dx = touch.clientX - this.lastLookTouch.x;
-      const dy = touch.clientY - this.lastLookTouch.y;
-      
-      this.threeGame.updateMobileLook(dx, dy);
-      
-      this.lastLookTouch = { x: touch.clientX, y: touch.clientY };
+      this.joystickActive = false;
+      this.joystickTransform.set(`translate(0px, 0px)`);
+      this.threeGame.updateMobileJoystick(0, 0);
   }
 
   handleMobileJump(e: TouchEvent) {
-      e.preventDefault();
       this.threeGame.doJump();
+  }
+
+  // Mobile Look (Touch anywhere else)
+  private lookTouchId: number | null = null;
+  private lookOrigin = { x: 0, y: 0 };
+
+  handleTouchLookStart(e: TouchEvent) {
+      // Avoid conflict with joystick
+      for (let i=0; i<e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          // Check if it's on right side or not inside joystick
+          // Simple heuristic: if x > windowWidth/2 or not joystick
+          if (t.clientX > window.innerWidth / 2) {
+              this.lookTouchId = t.identifier;
+              this.lookOrigin = { x: t.clientX, y: t.clientY };
+              break;
+          }
+      }
+  }
+
+  handleTouchLookMove(e: TouchEvent) {
+      if (this.lookTouchId === null) return;
+      for (let i=0; i<e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          if (t.identifier === this.lookTouchId) {
+              const dx = t.clientX - this.lookOrigin.x;
+              const dy = t.clientY - this.lookOrigin.y;
+              
+              this.threeGame.updateMobileLook(dx, dy);
+              
+              this.lookOrigin = { x: t.clientX, y: t.clientY };
+              break;
+          }
+      }
   }
 }

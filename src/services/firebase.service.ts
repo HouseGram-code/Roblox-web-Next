@@ -50,6 +50,7 @@ export class FirebaseService {
   private app: any;
   private db: any;
   public currentUserId: string;
+  private currentUsername: string = '';
   
   // Signals for components to react to
   public otherPlayers = signal<Record<string, PlayerData>>({});
@@ -95,6 +96,7 @@ export class FirebaseService {
   // --- Realtime Game Logic ---
 
   joinGame(user: UserState, clothesColor?: number) {
+    this.currentUsername = user.username;
     const playerRef = ref(this.db, 'players/' + this.currentUserId);
     
     // Set initial data
@@ -118,6 +120,9 @@ export class FirebaseService {
 
     // Remove player on disconnect
     onDisconnect(playerRef).remove();
+
+    // Announce join
+    this.sendMessage('System', `${user.username} joined the server.`, true);
 
     // Listen to ALL players
     const allPlayersRef = ref(this.db, 'players');
@@ -148,6 +153,15 @@ export class FirebaseService {
     this.incrementVisits();
   }
 
+  leaveGame() {
+    const playerRef = ref(this.db, 'players/' + this.currentUserId);
+    remove(playerRef).catch(() => {});
+    
+    if (this.currentUsername) {
+        this.sendMessage('System', `${this.currentUsername} left the server.`, true);
+    }
+  }
+
   updatePosition(x: number, y: number, z: number, rotation: number) {
     const playerRef = ref(this.db, 'players/' + this.currentUserId);
     update(playerRef, {
@@ -158,13 +172,14 @@ export class FirebaseService {
     }).catch(() => {}); 
   }
 
-  sendMessage(username: string, text: string) {
+  sendMessage(username: string, text: string, isSystem: boolean = false) {
     const chatRef = ref(this.db, 'chat');
     const newMsgRef = push(chatRef);
     set(newMsgRef, {
       author: username,
       text: text,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      system: isSystem
     });
   }
 
