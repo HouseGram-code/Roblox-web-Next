@@ -41,6 +41,7 @@ export interface GameStats {
   likes: number;
   dislikes: number;
   visits: number;
+  activePlayers?: number;
 }
 
 @Injectable({
@@ -65,18 +66,25 @@ export class FirebaseService {
     this.currentUserId = 'user_' + Math.random().toString(36).substr(2, 9);
     try {
         this.app = initializeApp(firebaseConfig);
-        this.db = getDatabase(this.app);
-        this.initialized = true;
-        // Listen to Game Stats
-        this.listenToGameStats();
+        try {
+            // Attempt to get database instance
+            this.db = getDatabase(this.app, firebaseConfig.databaseURL);
+            this.initialized = true;
+            this.listenToGameStats();
+        } catch (dbError) {
+            console.error("Firebase Database Init Error:", dbError);
+            // App continues in offline mode
+        }
     } catch (e) {
-        console.error("Firebase Initialization Failed:", e);
+        console.error("Firebase App Initialization Failed:", e);
     }
   }
 
   private checkInit() {
-      if (!this.initialized) console.warn("Firebase not initialized");
-      return this.initialized;
+      if (!this.initialized || !this.db) {
+          return false;
+      }
+      return true;
   }
 
   // --- Persistent User Profile Logic ---
@@ -86,7 +94,9 @@ export class FirebaseService {
   }
 
   async getUserProfile(email: string): Promise<UserState | null> {
-      if (!this.checkInit()) return null;
+      if (!this.checkInit()) {
+          return null; 
+      }
       const key = this.sanitizeEmail(email);
       const userRef = ref(this.db, 'users/' + key);
       try {
@@ -104,7 +114,9 @@ export class FirebaseService {
       if (!this.checkInit() || !user.email) return;
       const key = this.sanitizeEmail(user.email);
       const userRef = ref(this.db, 'users/' + key);
-      await update(userRef, user);
+      try {
+        await update(userRef, user);
+      } catch(e) { console.error("Save profile failed", e); }
   }
 
   // --- Realtime Game Logic ---
@@ -130,7 +142,7 @@ export class FirebaseService {
           accessories: user.avatar.accessories || []
       },
       lastActive: serverTimestamp()
-    });
+    }).catch(e => console.error("Join game failed", e));
 
     onDisconnect(playerRef).remove();
 
@@ -191,12 +203,13 @@ export class FirebaseService {
       text: text,
       timestamp: Date.now(),
       system: isSystem
-    });
+    }).catch(() => {});
   }
 
   // --- Game Stats Logic ---
 
   private listenToGameStats() {
+      if (!this.checkInit()) return;
       const statsRef = ref(this.db, 'gameStats/rainbow');
       onValue(statsRef, (snapshot) => {
           const val = snapshot.val();
@@ -220,7 +233,7 @@ export class FirebaseService {
               currentData.dislikes = (currentData.dislikes || 0) + 1;
           }
           return currentData;
-      });
+      }).catch(() => {});
   }
 
   incrementVisits() {
@@ -228,6 +241,6 @@ export class FirebaseService {
       const visitsRef = ref(this.db, 'gameStats/rainbow/visits');
       runTransaction(visitsRef, (visits) => {
           return (visits || 0) + 1;
-      });
+      }).catch(() => {});
   }
 }
