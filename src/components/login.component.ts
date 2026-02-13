@@ -1,6 +1,7 @@
 import { Component, output, signal } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { FirebaseService } from '../services/firebase.service';
+import { AudioService } from '../services/audio.service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
@@ -65,10 +66,14 @@ export class LoginComponent {
 
   constructor(
       private dataService: DataService,
-      private firebaseService: FirebaseService
+      private firebaseService: FirebaseService,
+      private audioService: AudioService
   ) {}
 
   async onAction() {
+    // Unlock audio immediately on user interaction to support iOS/Android policies
+    this.audioService.unlockAudio();
+
     if (!this.email.trim() || !this.email.includes('@')) {
         this.error.set('Please enter a valid email.');
         return;
