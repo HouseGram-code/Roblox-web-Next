@@ -1,4 +1,4 @@
-import { Component, computed, signal, effect, ViewChild, ElementRef, OnDestroy, untracked, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, signal, effect, ViewChild, ElementRef, OnDestroy, untracked, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from './services/data.service';
@@ -15,7 +15,7 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
   selector: 'app-root',
   standalone: true,
   imports: [CommonModule, LoginComponent, FormsModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  // ChangeDetectionStrategy.OnPush removed to ensure initial render in zoneless mode
   template: `
 @if (currentView() === 'LOGIN') {
   <app-login (loginSuccess)="onLoginSuccess()"></app-login>
