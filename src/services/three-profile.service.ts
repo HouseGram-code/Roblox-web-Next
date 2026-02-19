@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { DataService } from './data.service';
 
 declare const THREE: any;
@@ -15,7 +15,9 @@ export class ThreeProfileService {
   private isDragging = false;
   private prevMouse = { x: 0 };
 
-  constructor(private dataService: DataService) {}
+  private dataService = inject(DataService);
+
+  constructor() {}
 
   init(container: HTMLElement) {
     this.scene = new THREE.Scene();

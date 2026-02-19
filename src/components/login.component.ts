@@ -1,4 +1,4 @@
-import { Component, output, signal } from '@angular/core';
+import { Component, output, signal, inject } from '@angular/core';
 import { DataService } from '../services/data.service';
 import { FirebaseService } from '../services/firebase.service';
 import { AudioService } from '../services/audio.service';
@@ -65,11 +65,11 @@ export class LoginComponent {
   isLoading = signal(false);
   error = signal('');
 
-  constructor(
-      private dataService: DataService,
-      private firebaseService: FirebaseService,
-      private audioService: AudioService
-  ) {}
+  private dataService = inject(DataService);
+  private firebaseService = inject(FirebaseService);
+  private audioService = inject(AudioService);
+
+  constructor() {}
 
   async onAction() {
     // Unlock audio immediately on user interaction to support iOS/Android policies

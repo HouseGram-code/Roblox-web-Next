@@ -1,4 +1,4 @@
-import { Injectable, signal, effect } from '@angular/core';
+import { Injectable, signal, effect, inject } from '@angular/core';
 import { DataService } from './data.service';
 import { AudioService } from './audio.service';
 import { FirebaseService, PlayerData } from './firebase.service';
@@ -56,11 +56,11 @@ export class ThreeGameService {
   public showCheckpointMsg = signal(false);
   public isVictory = signal(false);
 
-  constructor(
-      private dataService: DataService,
-      private audio: AudioService,
-      private firebaseService: FirebaseService
-  ) {
+  private dataService = inject(DataService);
+  private audio = inject(AudioService);
+  private firebaseService = inject(FirebaseService);
+
+  constructor() {
       // Effect to handle remote player updates
       effect(() => {
           if (!this.scene) return;
