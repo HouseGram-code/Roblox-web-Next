@@ -124,10 +124,50 @@ export class ThreeProfileService {
      if (!this.playerGroup) return;
     const user = this.dataService.user();
     
+    // 1. Update Clothes
     const clothesItem = this.dataService.getItem(user.avatar.clothes);
     const torso = this.playerGroup.getObjectByName('torso');
     if (torso && clothesItem && clothesItem.color) {
+        // @ts-ignore
         torso.material.color.setHex(clothesItem.color);
+    }
+
+    // 2. Update Accessories (Hat)
+    const head = this.playerGroup.children.find((c: any) => c.geometry && c.position.y > 2); // Find head mesh
+    
+    // Remove old accessories
+    if (head) {
+        const oldHat = head.getObjectByName('hat_defender');
+        if (oldHat) head.remove(oldHat);
+
+        // Add Defender Hat if equipped
+        if (user.avatar.accessories?.includes('hat_defender')) {
+            const hatGroup = new THREE.Group();
+            hatGroup.name = 'hat_defender';
+            
+            // Military Cap Base
+            const capBaseGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.3, 32);
+            const capMat = new THREE.MeshLambertMaterial({ color: 0x2e7d32 }); // Dark Green
+            const capBase = new THREE.Mesh(capBaseGeo, capMat);
+            capBase.position.y = 0.65; // On top of head (head is 1.2 high, center at 0)
+            hatGroup.add(capBase);
+
+            // Cap Visor
+            const visorGeo = new THREE.BoxGeometry(0.8, 0.05, 0.6);
+            const visorMat = new THREE.MeshLambertMaterial({ color: 0x1b5e20 }); // Darker Green
+            const visor = new THREE.Mesh(visorGeo, visorMat);
+            visor.position.set(0, 0.55, 0.5); // Front of cap
+            hatGroup.add(visor);
+
+            // Red Star Badge
+            const starGeo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
+            const starMat = new THREE.MeshLambertMaterial({ color: 0xd32f2f }); // Red
+            const star = new THREE.Mesh(starGeo, starMat);
+            star.position.set(0, 0.65, 0.66); // Front of cap base
+            hatGroup.add(star);
+
+            head.add(hatGroup);
+        }
     }
   }
 

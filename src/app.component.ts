@@ -8,7 +8,7 @@ import { ThreeProfileService } from './services/three-profile.service';
 import { AudioService } from './services/audio.service';
 import { FirebaseService, ChatMessage } from './services/firebase.service';
 
-type View = 'LOGIN' | 'DISCOVERY' | 'PROFILE' | 'GAME';
+type View = 'LOGIN' | 'DISCOVERY' | 'PROFILE' | 'GAME' | 'SHOP';
 type MenuTab = 'PLAYERS' | 'SETTINGS';
 
 @Component({
@@ -35,6 +35,9 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
         <div class="flex items-center gap-6">
             <button (click)="navTo('DISCOVERY')" [class.text-white]="currentView() === 'DISCOVERY'" [class.text-gray-400]="currentView() !== 'DISCOVERY'" class="font-bold text-sm hover:text-white flex items-center gap-2 transition-colors">
             <i class="fas fa-gamepad text-lg"></i> Games
+            </button>
+            <button (click)="navTo('SHOP')" [class.text-white]="currentView() === 'SHOP'" [class.text-gray-400]="currentView() !== 'SHOP'" class="font-bold text-sm hover:text-white flex items-center gap-2 transition-colors">
+            <i class="fas fa-store text-lg"></i> Shop
             </button>
             <button (click)="navTo('PROFILE')" [class.text-white]="currentView() === 'PROFILE'" [class.text-gray-400]="currentView() !== 'PROFILE'" class="font-bold text-sm hover:text-white flex items-center gap-2 transition-colors">
             <i class="fas fa-user text-lg"></i> Profile
@@ -86,6 +89,53 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
         </div>
       </div>
     </div>
+  }
+
+  <!-- SHOP PAGE -->
+  @if (currentView() === 'SHOP') {
+      <div class="p-8 h-[calc(100vh-64px)] overflow-y-auto bg-[#1a1c1e]">
+          <div class="flex items-center justify-between mb-8">
+              <h1 class="text-3xl font-black text-white flex items-center gap-3">
+                  <i class="fas fa-store text-blue-500"></i> Avatar Shop
+              </h1>
+              <div class="bg-[#232527] px-4 py-2 rounded-lg border border-white/5 flex items-center gap-2">
+                  <i class="fas fa-coins text-yellow-500"></i>
+                  <span class="text-white font-bold">0 Robux</span>
+              </div>
+          </div>
+
+          <!-- Featured Section -->
+          <div class="mb-10">
+              <h2 class="text-xl font-bold text-white mb-4 uppercase tracking-wider border-b border-white/10 pb-2">Featured Items</h2>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <!-- Defender Hat Special -->
+                  <div class="bg-gradient-to-br from-[#1b5e20] to-[#2e7d32] rounded-xl p-1 shadow-lg relative overflow-hidden group">
+                      <div class="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 shadow-md">LIMITED TIME</div>
+                      <div class="bg-[#1a1c1e] h-full rounded-lg p-6 flex flex-col relative z-0">
+                          <div class="flex-grow flex flex-col items-center text-center">
+                              <div class="w-32 h-32 bg-[#232527] rounded-full mb-4 flex items-center justify-center shadow-inner relative overflow-hidden">
+                                  <i class="fas fa-star text-6xl text-red-600 drop-shadow-lg absolute opacity-20 animate-pulse"></i>
+                                  <i class="fas fa-hard-hat text-5xl text-[#4caf50] relative z-10"></i>
+                              </div>
+                              <h3 class="text-2xl font-black text-white mb-1">Шляпа Защитника</h3>
+                              <p class="text-gray-400 text-sm mb-4">Эксклюзивный предмет в честь 23 Февраля. Символ мужества.</p>
+                          </div>
+                          
+                          @if (dataService.hasItem('hat_defender')) {
+                              <button disabled class="w-full py-3 bg-gray-700 text-gray-400 rounded-lg font-bold cursor-not-allowed flex items-center justify-center gap-2">
+                                  <i class="fas fa-check"></i> ALREADY OWNED
+                              </button>
+                          } @else {
+                              <button (click)="buyItem('hat_defender')" class="w-full py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+                                  <i class="fas fa-shopping-cart"></i> CLAIM FREE
+                              </button>
+                          }
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
   }
 
   <!-- PROFILE PAGE -->
@@ -184,24 +234,31 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
                       
                       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         @for (item of dataService.ITEMS; track item.id) {
-                           <div 
-                             (click)="equip(item.id, item.type)"
-                             class="group relative bg-[#232527] rounded-xl p-3 cursor-pointer border-2 transition-all hover:-translate-y-1 hover:shadow-xl"
-                             [class.border-blue-500]="dataService.user().avatar.clothes === item.id || dataService.user().avatar.face === item.id"
-                             [class.border-transparent]="dataService.user().avatar.clothes !== item.id && dataService.user().avatar.face !== item.id"
-                             [class.bg-blue-900-10]="dataService.user().avatar.clothes === item.id"
-                           >
-                             @if (dataService.user().avatar.clothes === item.id) {
-                                 <div class="absolute top-2 right-2 text-blue-500 text-[10px] font-black bg-blue-900/40 px-1.5 py-0.5 rounded backdrop-blur-md"><i class="fas fa-check"></i> EQUIPPED</div>
-                             }
-                             <div class="aspect-square bg-[#111213] rounded-lg mb-3 overflow-hidden flex items-center justify-center relative shadow-inner">
-                                 <!-- Color Preview for Clothes -->
-                                 <div class="w-16 h-16 rounded shadow-lg transform group-hover:scale-110 transition" [style.background-color]="'#' + item.color?.toString(16)?.padStart(6, '0')"></div>
-                             </div>
-                             
-                             <div class="font-bold text-white text-sm truncate">{{ item.name }}</div>
-                             <div class="text-xs text-gray-500">{{ item.type | titlecase }}</div>
-                           </div>
+                           <!-- Only show owned items -->
+                           @if (dataService.hasItem(item.id)) {
+                               <div 
+                                 (click)="equip(item.id, item.type)"
+                                 class="group relative bg-[#232527] rounded-xl p-3 cursor-pointer border-2 transition-all hover:-translate-y-1 hover:shadow-xl"
+                                 [class.border-blue-500]="dataService.user().avatar.clothes === item.id || dataService.user().avatar.face === item.id || dataService.user().avatar.accessories?.includes(item.id)"
+                                 [class.border-transparent]="dataService.user().avatar.clothes !== item.id && dataService.user().avatar.face !== item.id && !dataService.user().avatar.accessories?.includes(item.id)"
+                                 [class.bg-blue-900-10]="dataService.user().avatar.clothes === item.id"
+                               >
+                                 @if (dataService.user().avatar.clothes === item.id || dataService.user().avatar.accessories?.includes(item.id)) {
+                                     <div class="absolute top-2 right-2 text-blue-500 text-[10px] font-black bg-blue-900/40 px-1.5 py-0.5 rounded backdrop-blur-md"><i class="fas fa-check"></i> EQUIPPED</div>
+                                 }
+                                 <div class="aspect-square bg-[#111213] rounded-lg mb-3 overflow-hidden flex items-center justify-center relative shadow-inner">
+                                     <!-- Color Preview for Clothes -->
+                                     @if (item.type === 'clothes') {
+                                        <div class="w-16 h-16 rounded shadow-lg transform group-hover:scale-110 transition" [style.background-color]="'#' + item.color?.toString(16)?.padStart(6, '0')"></div>
+                                     } @else if (item.id === 'hat_defender') {
+                                        <i class="fas fa-hard-hat text-4xl text-[#4caf50]"></i>
+                                     }
+                                 </div>
+                                 
+                                 <div class="font-bold text-white text-sm truncate">{{ item.name }}</div>
+                                 <div class="text-xs text-gray-500">{{ item.type | titlecase }}</div>
+                               </div>
+                           }
                         }
                       </div>
                   </div>
@@ -692,6 +749,16 @@ export class AppComponent implements OnDestroy {
              this.unreadMessagesCount.update(c => c + 1);
         }
     }, { allowSignalWrites: true });
+
+    // Auto-Login Check
+    const u = this.dataService.user();
+    if (u.username && u.username !== 'Guest') {
+        this.currentView.set('DISCOVERY');
+    }
+  }
+
+  buyItem(id: string) {
+      this.dataService.buyItem(id);
   }
 
   onLoginSuccess() {
