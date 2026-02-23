@@ -1,4 +1,4 @@
-import { Component, computed, signal, effect, ViewChild, ElementRef, OnDestroy, untracked, inject } from '@angular/core';
+import { Component, computed, signal, effect, ViewChild, ElementRef, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from './services/data.service';
@@ -622,6 +622,7 @@ export class AppComponent implements OnDestroy {
   threeProfile = inject(ThreeProfileService);
   audioService = inject(AudioService);
   firebaseService = inject(FirebaseService);
+  cdr = inject(ChangeDetectorRef);
 
   // View State
   currentView = signal<View>('LOGIN');
@@ -690,11 +691,13 @@ export class AppComponent implements OnDestroy {
         if (!this.isChatVisible() && msgs.length > 0) {
              this.unreadMessagesCount.update(c => c + 1);
         }
-    });
+    }, { allowSignalWrites: true });
   }
 
   onLoginSuccess() {
+      console.log('EVENT RECEIVED: onLoginSuccess in AppComponent');
       this.currentView.set('DISCOVERY');
+      this.cdr.detectChanges();
   }
 
   navTo(view: View) {

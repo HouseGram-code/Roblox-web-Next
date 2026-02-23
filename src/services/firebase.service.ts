@@ -100,8 +100,11 @@ export class FirebaseService {
       const key = this.sanitizeEmail(email);
       const userRef = ref(this.db, 'users/' + key);
       try {
-          const snapshot = await get(userRef);
-          if (snapshot.exists()) {
+          const snapshot = await Promise.race([
+              get(userRef),
+              new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+          ]);
+          if (snapshot && snapshot.exists()) {
               return snapshot.val() as UserState;
           }
       } catch (e) {
