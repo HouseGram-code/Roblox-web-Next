@@ -8,7 +8,7 @@ import { ThreeProfileService } from './services/three-profile.service';
 import { AudioService } from './services/audio.service';
 import { FirebaseService, ChatMessage } from './services/firebase.service';
 
-type View = 'LOGIN' | 'DISCOVERY' | 'PROFILE' | 'GAME' | 'SHOP';
+type View = 'LOGIN' | 'DISCOVERY' | 'PROFILE' | 'GAME' | 'SHOP' | 'UPDATES';
 type MenuTab = 'PLAYERS' | 'SETTINGS';
 
 @Component({
@@ -41,6 +41,9 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
             </button>
             <button (click)="navTo('PROFILE')" [class.text-white]="currentView() === 'PROFILE'" [class.text-gray-400]="currentView() !== 'PROFILE'" class="font-bold text-sm hover:text-white flex items-center gap-2 transition-colors">
             <i class="fas fa-user text-lg"></i> Profile
+            </button>
+            <button (click)="navTo('UPDATES')" [class.text-white]="currentView() === 'UPDATES'" [class.text-gray-400]="currentView() !== 'UPDATES'" class="font-bold text-sm hover:text-white flex items-center gap-2 transition-colors">
+            <i class="fas fa-bell text-lg"></i> Updates
             </button>
         </div>
       </div>
@@ -180,6 +183,11 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
           <!-- Left Column: Stats -->
           <div class="space-y-6">
               <div class="bg-[#1a1c1e] rounded-xl p-6 border border-white/5 shadow-lg">
+                  <!-- Character Editor Button -->
+                  <button (click)="openCharacterEditor()" class="w-full mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95">
+                      <i class="fas fa-tshirt"></i> Customize Character
+                  </button>
+
                   <h3 class="text-gray-400 font-bold uppercase text-xs mb-4 tracking-wider">Statistics</h3>
                   <div class="grid grid-cols-2 gap-4">
                       <div class="bg-[#232527] p-3 rounded-lg text-center hover:bg-[#2a2c2e] transition">
@@ -211,7 +219,7 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
                   
                   <div class="mt-6 pt-6 border-t border-white/5 text-xs text-gray-500 font-medium flex justify-between">
                       <span>Joined Feb 2026</span>
-                      <span class="text-blue-500/50 font-mono">v0.2 Beta</span>
+                      <span class="text-blue-500/50 font-mono">v0.2B</span>
                   </div>
               </div>
           </div>
@@ -267,7 +275,135 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
       </div>
     </div>
   }
+
+  <!-- UPDATES PAGE -->
+  @if (currentView() === 'UPDATES') {
+    <div class="p-8 h-[calc(100vh-64px)] overflow-y-auto bg-[#1a1c1e]">
+      <h1 class="text-3xl font-black text-white mb-8 flex items-center gap-3">
+          <i class="fas fa-bell text-yellow-500"></i> Updates
+      </h1>
+
+      <div class="max-w-3xl mx-auto space-y-8">
+          <!-- Update 0.2B -->
+          <div class="bg-[#232527] rounded-xl border border-white/5 overflow-hidden shadow-lg">
+              <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex justify-between items-center">
+                  <h2 class="text-xl font-bold text-white">Update 0.2B</h2>
+                  <span class="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded">LATEST</span>
+              </div>
+              <div class="p-6">
+                  <div class="mb-6">
+                      <h3 class="text-green-400 font-bold uppercase text-xs mb-3 tracking-wider flex items-center gap-2">
+                          <i class="fas fa-plus-circle"></i> What's New
+                      </h3>
+                      <ul class="space-y-2 text-gray-300 text-sm">
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-check text-green-500 mt-1"></i>
+                              <span><strong>Character Editor:</strong> Customize your avatar with a new 3D editor in the Profile tab.</span>
+                          </li>
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-check text-green-500 mt-1"></i>
+                              <span><strong>Sound Effects:</strong> Improved jumping and walking sounds for better immersion.</span>
+                          </li>
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-check text-green-500 mt-1"></i>
+                              <span><strong>Updates Tab:</strong> Added this section to track game changes.</span>
+                          </li>
+                      </ul>
+                  </div>
+
+                  <div>
+                      <h3 class="text-orange-400 font-bold uppercase text-xs mb-3 tracking-wider flex items-center gap-2">
+                          <i class="fas fa-wrench"></i> Fixes & Improvements
+                      </h3>
+                      <ul class="space-y-2 text-gray-300 text-sm">
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-bug text-orange-500 mt-1"></i>
+                              <span>Fixed chat notification badge persisting after reading messages.</span>
+                          </li>
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-bug text-orange-500 mt-1"></i>
+                              <span>Reverted login theme to standard dark mode.</span>
+                          </li>
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-bug text-orange-500 mt-1"></i>
+                              <span>General performance improvements.</span>
+                          </li>
+                      </ul>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+  }
 }
+
+  <!-- CHARACTER EDITOR MODAL -->
+  @if (isCharacterEditorOpen()) {
+      <div class="fixed inset-0 z-[100] bg-[#0f1115] flex flex-col animate-in fade-in duration-300">
+          <!-- Editor Header -->
+          <div class="h-16 bg-[#1a1c1e] border-b border-white/5 flex justify-between items-center px-6">
+              <h2 class="text-xl font-black text-white flex items-center gap-2">
+                  <i class="fas fa-paint-brush text-blue-500"></i> Character Editor
+              </h2>
+              <div class="flex items-center gap-4">
+                  <button (click)="toggleEditorTheme()" class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 transition" title="Change Background Theme">
+                      <i class="fas fa-palette"></i>
+                  </button>
+                  <button (click)="closeCharacterEditor()" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white font-bold transition">
+                      Done
+                  </button>
+              </div>
+          </div>
+
+          <div class="flex-grow flex flex-col lg:flex-row overflow-hidden">
+              <!-- 3D Preview Area -->
+              <div class="flex-grow relative" [class.bg-[#111213]]="editorTheme() === 'dark'" [class.bg-gray-200]="editorTheme() === 'light'" [class.bg-blue-900]="editorTheme() === 'blue'">
+                  <div class="absolute inset-0 flex items-center justify-center">
+                       <div #editorContainer class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+                  </div>
+                  
+                  <!-- Controls Overlay -->
+                  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4 bg-black/50 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
+                      <div class="text-white text-xs font-bold flex items-center gap-2">
+                          <i class="fas fa-arrows-alt-h"></i> DRAG TO ROTATE
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Customization Sidebar -->
+              <div class="w-full lg:w-96 bg-[#1a1c1e] border-l border-white/5 flex flex-col">
+                  <div class="p-4 border-b border-white/5">
+                      <h3 class="text-white font-bold mb-1">Wardrobe</h3>
+                      <p class="text-gray-500 text-xs">Select items to equip</p>
+                  </div>
+                  
+                  <div class="flex-grow overflow-y-auto p-4">
+                      <div class="grid grid-cols-3 gap-3">
+                        @for (item of dataService.ITEMS; track item.id) {
+                           @if (dataService.hasItem(item.id)) {
+                               <div 
+                                 (click)="equip(item.id, item.type)"
+                                 class="group relative bg-[#232527] rounded-xl p-2 cursor-pointer border-2 transition-all hover:shadow-lg"
+                                 [class.border-blue-500]="dataService.user().avatar.clothes === item.id || dataService.user().avatar.face === item.id || dataService.user().avatar.accessories?.includes(item.id)"
+                                 [class.border-transparent]="dataService.user().avatar.clothes !== item.id && dataService.user().avatar.face !== item.id && !dataService.user().avatar.accessories?.includes(item.id)"
+                               >
+                                 <div class="aspect-square bg-[#111213] rounded-lg mb-2 overflow-hidden flex items-center justify-center relative">
+                                     @if (item.type === 'clothes') {
+                                        <div class="w-10 h-10 rounded shadow-lg" [style.background-color]="'#' + item.color?.toString(16)?.padStart(6, '0')"></div>
+                                     } @else if (item.id === 'hat_defender') {
+                                        <i class="fas fa-hard-hat text-2xl text-[#4caf50]"></i>
+                                     }
+                                 </div>
+                                 <div class="font-bold text-white text-xs truncate">{{ item.name }}</div>
+                               </div>
+                           }
+                        }
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  }
 
 <!-- GAME VIEW (NO UI CHROME) -->
 @if (currentView() === 'GAME') {
@@ -448,7 +584,7 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
                      <i class="fas fa-cog text-xl"></i>
                  </button>
                  
-                 <div class="mt-auto text-[10px] text-gray-600 font-mono font-bold mb-2">v0.1B</div>
+                 <div class="mt-auto text-[10px] text-gray-600 font-mono font-bold mb-2">v0.2B</div>
              </div>
 
              <!-- Content -->
@@ -699,9 +835,12 @@ export class AppComponent implements OnDestroy {
   chatInput = '';
   chatMessages = this.firebaseService.chatMessages;
   unreadMessagesCount = signal(0);
+  private lastMsgCount = 0;
   
   // Profile
   isEditingProfile = signal(false);
+  isCharacterEditorOpen = signal(false); // New Editor Mode
+  editorTheme = signal('dark'); // 'dark' | 'light' | 'blue'
   editName = '';
   editDesc = '';
 
@@ -712,6 +851,7 @@ export class AppComponent implements OnDestroy {
   // References
   @ViewChild('gameContainer') gameContainer!: ElementRef;
   @ViewChild('profileContainer') profileContainer!: ElementRef;
+  @ViewChild('editorContainer') editorContainer!: ElementRef; // For the big editor
   @ViewChild('joystickZone') joystickZone!: ElementRef;
 
   // Computed
@@ -745,8 +885,12 @@ export class AppComponent implements OnDestroy {
     effect(() => {
         // Chat listener
         const msgs = this.chatMessages();
-        if (!this.isChatVisible() && msgs.length > 0) {
-             this.unreadMessagesCount.update(c => c + 1);
+        // Only increment if we have NEW messages and chat is closed
+        if (msgs.length > this.lastMsgCount) {
+            if (!this.isChatVisible()) {
+                this.unreadMessagesCount.update(c => c + (msgs.length - this.lastMsgCount));
+            }
+            this.lastMsgCount = msgs.length;
         }
     }, { allowSignalWrites: true });
 
@@ -770,6 +914,7 @@ export class AppComponent implements OnDestroy {
   navTo(view: View) {
     if (this.currentView() === 'GAME') return; // Must exit game first
     this.currentView.set(view);
+    this.isCharacterEditorOpen.set(false); // Reset editor
     
     if (view === 'PROFILE') {
         setTimeout(() => this.initProfilePreview(), 100);
@@ -780,7 +925,16 @@ export class AppComponent implements OnDestroy {
 
   initProfilePreview() {
       if (this.profileContainer) {
+          this.threeProfile.cleanup();
           this.threeProfile.init(this.profileContainer.nativeElement);
+      }
+  }
+  
+  initEditorPreview() {
+      if (this.editorContainer) {
+          // Re-use the same service, just re-init in new container
+          this.threeProfile.cleanup();
+          this.threeProfile.init(this.editorContainer.nativeElement);
       }
   }
 
@@ -839,6 +993,23 @@ export class AppComponent implements OnDestroy {
           this.editDesc = this.dataService.user().description;
           this.isEditingProfile.set(true);
       }
+  }
+  
+  openCharacterEditor() {
+      this.isCharacterEditorOpen.set(true);
+      setTimeout(() => this.initEditorPreview(), 100);
+  }
+  
+  closeCharacterEditor() {
+      this.isCharacterEditorOpen.set(false);
+      // Re-init small preview
+      setTimeout(() => this.initProfilePreview(), 100);
+  }
+  
+  toggleEditorTheme() {
+      const themes = ['dark', 'light', 'blue'];
+      const idx = themes.indexOf(this.editorTheme());
+      this.editorTheme.set(themes[(idx + 1) % themes.length]);
   }
 
   equip(itemId: string, type: 'face' | 'clothes' | 'accessory') {

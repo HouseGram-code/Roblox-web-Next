@@ -54,34 +54,66 @@ export class ThreeProfileService {
 
     // Interaction
     const canvas = this.renderer.domElement;
-    canvas.addEventListener('mousedown', (e: MouseEvent) => {
+    
+    this.onMouseDown = (e: MouseEvent) => {
         this.isDragging = true;
         this.prevMouse.x = e.clientX;
-    });
-    window.addEventListener('mousemove', (e: MouseEvent) => {
+    };
+    this.onMouseMove = (e: MouseEvent) => {
         if (!this.isDragging) return;
         const delta = e.clientX - this.prevMouse.x;
-        this.playerGroup.rotation.y += delta * 0.01;
+        if (this.playerGroup) this.playerGroup.rotation.y += delta * 0.01;
         this.prevMouse.x = e.clientX;
-    });
-    window.addEventListener('mouseup', () => this.isDragging = false);
+    };
+    this.onMouseUp = () => this.isDragging = false;
     
-    // Touch support
-    canvas.addEventListener('touchstart', (e: TouchEvent) => {
+    this.onTouchStart = (e: TouchEvent) => {
         this.isDragging = true;
         this.prevMouse.x = e.touches[0].clientX;
-    });
-    window.addEventListener('touchmove', (e: TouchEvent) => {
+    };
+    this.onTouchMove = (e: TouchEvent) => {
         if (!this.isDragging) return;
         const delta = e.touches[0].clientX - this.prevMouse.x;
-        this.playerGroup.rotation.y += delta * 0.01;
+        if (this.playerGroup) this.playerGroup.rotation.y += delta * 0.01;
         this.prevMouse.x = e.touches[0].clientX;
-    });
-    window.addEventListener('touchend', () => this.isDragging = false);
+    };
+    this.onTouchEnd = () => this.isDragging = false;
+
+    canvas.addEventListener('mousedown', this.onMouseDown);
+    window.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('mouseup', this.onMouseUp);
+    
+    canvas.addEventListener('touchstart', this.onTouchStart);
+    window.addEventListener('touchmove', this.onTouchMove);
+    window.addEventListener('touchend', this.onTouchEnd);
 
     this.animate();
   }
 
+  private onMouseDown: any;
+  private onMouseMove: any;
+  private onMouseUp: any;
+  private onTouchStart: any;
+  private onTouchMove: any;
+  private onTouchEnd: any;
+
+  cleanup() {
+    if (this.animationId) cancelAnimationFrame(this.animationId);
+    
+    if (this.renderer) {
+      const canvas = this.renderer.domElement;
+      canvas.removeEventListener('mousedown', this.onMouseDown);
+      window.removeEventListener('mousemove', this.onMouseMove);
+      window.removeEventListener('mouseup', this.onMouseUp);
+      
+      canvas.removeEventListener('touchstart', this.onTouchStart);
+      window.removeEventListener('touchmove', this.onTouchMove);
+      window.removeEventListener('touchend', this.onTouchEnd);
+
+      this.renderer.domElement.remove();
+      this.renderer.dispose();
+    }
+  }
   createPlayerMesh() {
     // Same mesh logic, duplicated to be self-contained or could share via another util service
     const group = new THREE.Group();
@@ -190,14 +222,6 @@ export class ThreeProfileService {
 
     if (this.renderer && this.scene && this.camera) {
         this.renderer.render(this.scene, this.camera);
-    }
-  }
-
-  cleanup() {
-    if (this.animationId) cancelAnimationFrame(this.animationId);
-    if (this.renderer) {
-      this.renderer.domElement.remove();
-      this.renderer.dispose();
     }
   }
 }

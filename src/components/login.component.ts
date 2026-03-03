@@ -10,98 +10,75 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [FormsModule, CommonModule],
   template: `
-    <div class="fixed inset-0 bg-[#121810] flex items-center justify-center z-50 overflow-hidden">
-      <!-- Camouflage / Military Background Pattern -->
-      <div class="absolute inset-0 opacity-20 pointer-events-none" 
-           style="background-image: radial-gradient(#3a4a3a 2px, transparent 2px), radial-gradient(#2a3a2a 2px, transparent 2px); background-size: 32px 32px; background-position: 0 0, 16px 16px;">
-      </div>
-      
-      <!-- Animated Stars Background -->
+    <div class="fixed inset-0 bg-[#0f1115] flex items-center justify-center z-50 overflow-hidden font-sans">
+      <!-- Animated Background -->
       <div class="absolute inset-0 overflow-hidden pointer-events-none">
-          <div class="absolute top-10 left-10 text-yellow-600/20 text-6xl animate-pulse"><i class="fas fa-star"></i></div>
-          <div class="absolute bottom-20 right-20 text-red-600/20 text-8xl animate-pulse" style="animation-delay: 1s"><i class="fas fa-star"></i></div>
-          <div class="absolute top-1/2 left-20 text-yellow-600/10 text-4xl animate-pulse" style="animation-delay: 2s"><i class="fas fa-star"></i></div>
+          <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
+          <div class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" style="animation-delay: 2s"></div>
       </div>
 
-      <div class="relative bg-[#1e261e] bg-opacity-95 p-10 rounded-xl w-[420px] shadow-[0_0_50px_rgba(76,175,80,0.2)] border-2 border-[#3e4c3e]">
+      <div class="relative bg-[#181a1d] p-10 rounded-2xl w-[400px] shadow-2xl border border-white/5 backdrop-blur-xl">
         
-        <!-- St. George Ribbon Decor (Top) -->
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-6 bg-gradient-to-r from-orange-500 via-black to-orange-500 flex items-center justify-center shadow-lg transform -skew-x-12 border border-yellow-600/50">
-            <div class="w-full h-full flex justify-between px-1">
-                <div class="w-1/4 h-full bg-black/80"></div>
-                <div class="w-1/4 h-full bg-black/80"></div>
-                <div class="w-1/4 h-full bg-black/80"></div>
-            </div>
-        </div>
-
-        <div class="text-center mb-8 mt-4">
-          <div class="flex justify-center mb-2">
-             <i class="fas fa-star text-5xl text-red-600 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]"></i>
+        <!-- Logo Area -->
+        <div class="text-center mb-10">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg mb-4 transform rotate-3 hover:rotate-6 transition duration-300">
+             <span class="text-white font-black text-4xl mt-1">R</span>
           </div>
-          <div class="text-4xl font-black text-white mb-1 uppercase tracking-wider drop-shadow-md">23 Февраля</div>
-          <div class="text-sm font-bold text-[#8ba88b] uppercase tracking-[0.2em]">День Защитника Отечества</div>
+          <h1 class="text-3xl font-black text-white tracking-tight mb-1">Roblox <span class="text-blue-500">Next</span></h1>
+          <p class="text-gray-500 text-sm font-medium">Enter the metaverse</p>
         </div>
 
         <div class="space-y-5">
            @if (error()) {
-             <div class="bg-red-900/30 text-red-400 p-3 rounded border border-red-800/50 text-sm text-center font-bold">
-               <i class="fas fa-exclamation-triangle mr-2"></i> {{ error() }}
+             <div class="bg-red-500/10 text-red-400 p-3 rounded-lg border border-red-500/20 text-sm text-center font-bold flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2">
+               <i class="fas fa-exclamation-circle"></i> {{ error() }}
              </div>
            }
 
            <div>
-            <label class="block text-[#8ba88b] text-xs font-bold uppercase mb-2 tracking-wide">Email (Необязательно)</label>
+            <label class="block text-gray-400 text-xs font-bold uppercase mb-2 tracking-wider ml-1">Email (Optional)</label>
             <div class="relative group">
               <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <i class="fas fa-envelope text-[#4a5e4a] group-focus-within:text-[#6a8e6a] transition-colors"></i>
+                <i class="fas fa-envelope text-gray-500 group-focus-within:text-blue-500 transition-colors"></i>
               </div>
               <input type="email" [(ngModel)]="email" (input)="error.set('')" 
-                     class="w-full bg-[#121810] text-white pl-11 pr-4 py-3.5 rounded border border-[#2a3a2a] focus:border-[#4caf50] focus:ring-1 focus:ring-[#4caf50] focus:outline-none transition-all placeholder-[#3a4a3a] font-medium" 
-                     placeholder="soldier@example.com">
+                     class="w-full bg-[#0f1115] text-white pl-11 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all placeholder-gray-600 font-medium" 
+                     placeholder="player@example.com">
             </div>
            </div>
 
            <div>
-            <label class="block text-[#8ba88b] text-xs font-bold uppercase mb-2 tracking-wide">Позывной (Никнейм)</label>
+            <label class="block text-gray-400 text-xs font-bold uppercase mb-2 tracking-wider ml-1">Username</label>
             <div class="relative group">
               <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <i class="fas fa-dog text-[#4a5e4a] group-focus-within:text-[#6a8e6a] transition-colors"></i>
+                <i class="fas fa-user text-gray-500 group-focus-within:text-blue-500 transition-colors"></i>
               </div>
               <input type="text" [(ngModel)]="nickname" (input)="error.set('')" 
-                     class="w-full bg-[#121810] text-white pl-11 pr-4 py-3.5 rounded border border-[#2a3a2a] focus:border-[#4caf50] focus:ring-1 focus:ring-[#4caf50] focus:outline-none transition-all placeholder-[#3a4a3a] font-medium" 
-                     placeholder="Введите ваш ник">
+                     class="w-full bg-[#0f1115] text-white pl-11 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all placeholder-gray-600 font-medium" 
+                     placeholder="Enter your username">
             </div>
            </div>
            
            <button (click)="onAction()" [disabled]="isLoading()" 
-                   class="w-full bg-gradient-to-b from-[#4caf50] to-[#2e7d32] hover:from-[#5cb860] hover:to-[#388e3c] text-white py-4 rounded font-black uppercase tracking-widest shadow-[0_4px_0_#1b5e20] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 group relative overflow-hidden">
-             
-             <!-- Shine effect -->
-             <div class="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
+                   class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-2 group">
              
              @if (isLoading()) {
-               <span class="flex items-center justify-center gap-2">
-                 <i class="fas fa-cog fa-spin"></i> ЗАГРУЗКА...
-               </span>
+               <i class="fas fa-circle-notch fa-spin"></i>
+               <span>Connecting...</span>
              } @else {
-               <span class="flex items-center justify-center gap-2 text-shadow">
-                 <i class="fas fa-star"></i> ВСТУПИТЬ В ОТРЯД
-               </span>
+               <span>Start Playing</span>
+               <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
              }
            </button>
            
-           <div class="text-[10px] text-center text-[#4a5e4a] mt-6 font-mono uppercase">
-               Служим России • Roblox Next 2026
+           <div class="text-[10px] text-center text-gray-600 mt-6 font-medium">
+               By playing, you agree to our Terms of Service.
            </div>
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    .text-shadow {
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
-  `]
+  styles: []
 })
 export class LoginComponent {
   email = '';

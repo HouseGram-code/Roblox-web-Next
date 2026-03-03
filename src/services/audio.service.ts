@@ -6,16 +6,16 @@ import { Injectable } from '@angular/core';
 export class AudioService {
   // Reliable, high-quality upbeat electronic track
   private music = new Audio('https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg');
-  private jump = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/pause.wav'); // Short blip
-  private step = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3'); // Soft pop for step
+  private jump = new Audio('https://commondatastorage.googleapis.com/codeskulptor-assets/jump.ogg'); // Better jump sound
+  private step = new Audio('https://commondatastorage.googleapis.com/codeskulptor-assets/week7-bounce.m4a'); // Softer step sound
 
   constructor() {
     this.music.loop = true;
     this.music.volume = 0.25; 
     
-    this.jump.volume = 0.3;
+    this.jump.volume = 0.4; // Increased volume
     
-    this.step.volume = 0.1;
+    this.step.volume = 0.15; // Adjusted volume
   }
 
   // Call this immediately on a click event (e.g., "Play Game" button)
