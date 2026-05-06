@@ -55,6 +55,7 @@ export class ThreeGameService {
   public isPlaying = signal(false);
   public showCheckpointMsg = signal(false);
   public isVictory = signal(false);
+  public canDoubleJump = false;
 
   private dataService = inject(DataService);
   private audio = inject(AudioService);
@@ -393,9 +394,21 @@ export class ThreeGameService {
   }
 
   doJump() {
-    if (this.isPlaying() && !this.isLoading() && !this.isVictory() && this.onGround) {
-        this.velocity.y = 0.5;
-        this.audio.playJump();
+    if (this.isPlaying() && !this.isLoading() && !this.isVictory()) {
+        if (this.onGround) {
+            this.velocity.y = 0.5;
+            this.onGround = false;
+            this.canDoubleJump = true;
+            this.audio.playJump();
+        } else if (this.canDoubleJump) {
+            this.velocity.y = 0.45; // Second jump slightly weaker
+            this.canDoubleJump = false;
+            this.audio.playJump();
+            // Spin effect for double jump
+            if (this.playerGroup) {
+                this.playerGroup.rotation.y += Math.PI;
+            }
+        }
     }
   }
   // ---------------------
@@ -616,6 +629,41 @@ export class ThreeGameService {
             head.add(hatGroup);
         }
     }
+
+    if (torso) {
+        const oldWings = torso.getObjectByName('wings_spring');
+        if (oldWings) torso.remove(oldWings);
+
+        if (user.avatar.accessories?.includes('wings_spring')) {
+            const wingsGroup = new THREE.Group();
+            wingsGroup.name = 'wings_spring';
+            
+            const wingMat = new THREE.MeshLambertMaterial({ 
+                color: 0xffb7c5, 
+                transparent: true, 
+                opacity: 0.8,
+                emissive: 0xff69b4,
+                emissiveIntensity: 0.5,
+                side: THREE.DoubleSide
+            });
+
+            const wingGeoL = new THREE.BoxGeometry(1.8, 2.2, 0.05);
+            wingGeoL.translate(0.9, 0, 0); // Pivot at the edge
+            const wingL = new THREE.Mesh(wingGeoL, wingMat);
+            wingL.name = 'wingL';
+            wingL.position.set(0, 0.2, -0.6);
+
+            const wingGeoR = new THREE.BoxGeometry(1.8, 2.2, 0.05);
+            wingGeoR.translate(-0.9, 0, 0); // Pivot at the edge
+            const wingR = new THREE.Mesh(wingGeoR, wingMat);
+            wingR.name = 'wingR';
+            wingR.position.set(0, 0.2, -0.6);
+
+            wingsGroup.add(wingL);
+            wingsGroup.add(wingR);
+            torso.add(wingsGroup);
+        }
+    }
   }
 
   private setupInputs() {
@@ -687,6 +735,7 @@ export class ThreeGameService {
                  this.playerGroup.position.y = data.top; 
                  this.velocity.y = 0;
                  this.onGround = true;
+                 this.canDoubleJump = true;
 
                  // Check Victory
                  if (data.isFinish && !this.isVictory()) {
@@ -857,26 +906,79 @@ export class ThreeGameService {
         const legR = this.playerGroup.getObjectByName('legR');
         const armL = this.playerGroup.getObjectByName('armL');
         const armR = this.playerGroup.getObjectByName('armR');
+        const torso = this.playerGroup.getObjectByName('torso');
 
-        if (move && this.onGround) {
+        if (!this.onGround) {
+            // Jumping or Falling
+            const lerp = (current: number, target: number) => current + (target - current) * 0.2;
+            if (this.velocity.y > 0) {
+                // Going up - Jump pose
+                if(armL) armL.rotation.x = lerp(armL.rotation.x, Math.PI * 0.9);
+                if(armR) armR.rotation.x = lerp(armR.rotation.x, Math.PI * 0.9);
+                if(armL) armL.rotation.z = lerp(armL.rotation.z, 0.2);
+                if(armR) armR.rotation.z = lerp(armR.rotation.z, -0.2);
+                if(legL) legL.rotation.x = lerp(legL.rotation.x, -0.4);
+                if(legR) legR.rotation.x = lerp(legR.rotation.x, 0.4);
+            } else {
+                // Falling pose
+                if(armL) armL.rotation.x = lerp(armL.rotation.x, Math.PI * 0.75);
+                if(armR) armR.rotation.x = lerp(armR.rotation.x, Math.PI * 0.75);
+                if(armL) armL.rotation.z = lerp(armL.rotation.z, 0.5);
+                if(armR) armR.rotation.z = lerp(armR.rotation.z, -0.5);
+                if(legL) legL.rotation.x = lerp(legL.rotation.x, 0.1);
+                if(legR) legR.rotation.x = lerp(legR.rotation.x, -0.1);
+            }
+        } else if (move) {
+            // Running
+            const lerp = (current: number, target: number) => current + (target - current) * 0.2;
+            // Reset Z rotations
+            if(armL) armL.rotation.z = lerp(armL.rotation.z, 0);
+            if(armR) armR.rotation.z = lerp(armR.rotation.z, 0);
+            
             const angle = Math.sin(time) * 0.8;
             if(legL) legL.rotation.x = angle;
             if(legR) legR.rotation.x = -angle;
             if(armL) armL.rotation.x = -angle;
             if(armR) armR.rotation.x = angle;
+            
+            // Running bobbing handled via whole mesh container or child parts
+            const head = this.playerGroup.getObjectByName('head');
+            if (torso) torso.position.y = 3 + Math.abs(Math.sin(time * 2)) * 0.1;
+            if (head) head.position.y = 4.6 + Math.abs(Math.sin(time * 2)) * 0.1;
         } else {
-            const lerp = (current: number, target: number) => current + (target - current) * 0.2;
+            // Idle
+            const lerp = (current: number, target: number) => current + (target - current) * 0.1;
+            // Reset Z rotations
+            if(armL) armL.rotation.z = lerp(armL.rotation.z, 0);
+            if(armR) armR.rotation.z = lerp(armR.rotation.z, 0);
+            
             if(legL) legL.rotation.x = lerp(legL.rotation.x, 0);
             if(legR) legR.rotation.x = lerp(legR.rotation.x, 0);
             
-            if (this.onGround) {
-                if(armL) armL.rotation.x = lerp(armL.rotation.x, Math.sin(time * 0.2) * 0.05);
-                if(armR) armR.rotation.x = lerp(armR.rotation.x, Math.sin(time * 0.2) * 0.05);
-            } else {
-                if(armL) armL.rotation.x = lerp(armL.rotation.x, Math.PI);
-                if(armR) armR.rotation.x = lerp(armR.rotation.x, Math.PI);
-                if(legL) legL.rotation.x = lerp(legL.rotation.x, -0.2);
-                if(legR) legR.rotation.x = lerp(legR.rotation.x, 0.2);
+            // Breathing animation
+            const breath = Math.sin(time * 0.2) * 0.03;
+            if(armL) armL.rotation.x = lerp(armL.rotation.x, breath);
+            if(armR) armR.rotation.x = lerp(armR.rotation.x, -breath);
+            
+            const head = this.playerGroup.getObjectByName('head');
+            if (torso) {
+                torso.scale.y = 1 + breath;
+                torso.position.y = 3 + breath * 0.5;
+            }
+            if (head) head.position.y = 4.6 + breath;
+        }
+
+        // Animate Wings if equipped
+        if (torso) {
+            const wings = torso.getObjectByName('wings_spring');
+            if (wings) {
+                const wingL = wings.getObjectByName('wingL');
+                const wingR = wings.getObjectByName('wingR');
+                // Flap faster if moving
+                const flapSpeed = move ? 0.8 : 0.2;
+                const flap = Math.sin(time * flapSpeed) * 0.4 + 0.4;
+                if (wingL) wingL.rotation.y = -flap;
+                if (wingR) wingR.rotation.y = flap;
             }
         }
     }

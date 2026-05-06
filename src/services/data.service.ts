@@ -36,7 +36,10 @@ export class DataService {
       { id: 'clothes_orange', name: 'Orange Jumpsuit', type: 'clothes', img: 'https://picsum.photos/id/6/100/100', color: 0xff8800, description: 'Construction chic.', price: 0 },
       
       // NEW ITEM: Defender Hat
-      { id: 'hat_defender', name: 'Шляпа Защитника', type: 'accessory', img: '', color: 0x4caf50, description: 'Символ мужества и чести. 23 Февраля.', price: 0 }
+      { id: 'hat_defender', name: 'Шляпа Защитника', type: 'accessory', img: '', color: 0x4caf50, description: 'Символ мужества и чести. 23 Февраля.', price: 0 },
+      
+      // NEW ITEM: Spring Wings
+      { id: 'wings_spring', name: 'Крылья Весны', type: 'accessory', img: '', color: 0xff69b4, description: 'Живые анимированные крылья.', price: 0 }
   ];
 
   // State Signals

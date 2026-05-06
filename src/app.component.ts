@@ -32,18 +32,18 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
         </a>
 
         <!-- Nav Links -->
-        <div class="flex items-center gap-6">
-            <button (click)="navTo('DISCOVERY')" [class.text-white]="currentView() === 'DISCOVERY'" [class.text-gray-400]="currentView() !== 'DISCOVERY'" class="font-bold text-sm hover:text-white flex items-center gap-2 transition-colors">
-            <i class="fas fa-gamepad text-lg"></i> Games
+        <div class="flex items-center gap-2">
+            <button (click)="navTo('DISCOVERY')" [ngClass]="currentView() === 'DISCOVERY' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'" class="font-bold text-sm flex items-center gap-2 transition-all px-4 py-2 rounded-lg">
+            <i class="fas fa-gamepad text-lg" [class.text-blue-500]="currentView() === 'DISCOVERY'"></i> Games
             </button>
-            <button (click)="navTo('SHOP')" [class.text-white]="currentView() === 'SHOP'" [class.text-gray-400]="currentView() !== 'SHOP'" class="font-bold text-sm hover:text-white flex items-center gap-2 transition-colors">
-            <i class="fas fa-store text-lg"></i> Shop
+            <button (click)="navTo('SHOP')" [ngClass]="currentView() === 'SHOP' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'" class="font-bold text-sm flex items-center gap-2 transition-all px-4 py-2 rounded-lg">
+            <i class="fas fa-store text-lg" [class.text-yellow-500]="currentView() === 'SHOP'"></i> Shop
             </button>
-            <button (click)="navTo('PROFILE')" [class.text-white]="currentView() === 'PROFILE'" [class.text-gray-400]="currentView() !== 'PROFILE'" class="font-bold text-sm hover:text-white flex items-center gap-2 transition-colors">
-            <i class="fas fa-user text-lg"></i> Profile
+            <button (click)="navTo('PROFILE')" [ngClass]="currentView() === 'PROFILE' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'" class="font-bold text-sm flex items-center gap-2 transition-all px-4 py-2 rounded-lg">
+            <i class="fas fa-user text-lg" [class.text-green-500]="currentView() === 'PROFILE'"></i> Profile
             </button>
-            <button (click)="navTo('UPDATES')" [class.text-white]="currentView() === 'UPDATES'" [class.text-gray-400]="currentView() !== 'UPDATES'" class="font-bold text-sm hover:text-white flex items-center gap-2 transition-colors">
-            <i class="fas fa-bell text-lg"></i> Updates
+            <button (click)="navTo('UPDATES')" [ngClass]="currentView() === 'UPDATES' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'" class="font-bold text-sm flex items-center gap-2 transition-all px-4 py-2 rounded-lg">
+            <i class="fas fa-bell text-lg" [class.text-orange-500]="currentView() === 'UPDATES'"></i> Updates
             </button>
         </div>
       </div>
@@ -66,30 +66,66 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
   <!-- DISCOVERY PAGE -->
   @if (currentView() === 'DISCOVERY') {
     <div class="p-8 h-[calc(100vh-64px)] overflow-y-auto bg-[#1a1c1e]">
-      <h1 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><i class="fas fa-fire text-orange-500"></i> Popular Experiences</h1>
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h1 class="text-3xl font-black text-white flex items-center gap-3"><i class="fas fa-fire text-orange-500"></i> Popular Experiences</h1>
+        
+        <!-- Search Bar -->
+        <div class="relative w-full md:w-96">
+            <input 
+              type="text" 
+              [(ngModel)]="searchQuery"
+              placeholder="Search experiences..." 
+              class="w-full bg-[#232527] text-white text-sm px-4 py-3 pl-10 rounded-xl border border-white/10 focus:border-blue-500 focus:outline-none transition shadow-inner"
+            >
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        </div>
+      </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Card 1: Rainbow Obby -->
-        <div (click)="openGameModal('rainbow')" class="bg-[#232527] rounded-xl overflow-hidden cursor-pointer hover:-translate-y-2 hover:shadow-2xl transition border border-white/5 group">
-          <div class="h-40 bg-gradient-to-br from-pink-500 via-yellow-400 to-blue-400 relative overflow-hidden">
-             <!-- Shine effect -->
-            <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition duration-500"></div>
-            <span class="absolute top-3 left-3 bg-black/70 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm border border-white/10 flex items-center gap-1">
-                <i class="fas fa-fire text-orange-500 text-[10px]"></i> TRENDING
-            </span>
-          </div>
-          <div class="p-4">
-            <h3 class="text-xl font-bold mb-2 text-white leading-tight">Mega Rainbow Obby</h3>
-            <div class="flex items-center gap-4 text-xs font-bold text-gray-400">
-              <span class="text-green-400 flex items-center gap-1 bg-green-400/10 px-1.5 py-0.5 rounded">
-                  <i class="fas fa-thumbs-up"></i> {{ ratingPercentage() }}%
-              </span>
-              <span class="flex items-center gap-1">
-                  <i class="fas fa-user"></i> {{ onlineCount() }}
-              </span>
+        @if (matchesSearch('Mega Rainbow Obby', 'Obby, Parkour, Fun, Rainbow, Mega, Easy, Platformer')) {
+            <div (click)="openGameModal('rainbow')" class="bg-[#232527] rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-300 border border-white/5 group relative">
+              <div class="h-44 bg-gradient-to-br from-purple-600 via-pink-500 to-yellow-500 relative overflow-hidden">
+                 <!-- Shine effect -->
+                <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"></div>
+                <!-- Play overlay -->
+                <div class="absolute inset-0 z-20 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none backdrop-blur-sm">
+                   <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.6)] transform scale-50 group-hover:scale-100 transition-transform duration-300">
+                      <i class="fas fa-play text-white ml-1 text-2xl"></i>
+                   </div>
+                </div>
+                <span class="absolute top-3 left-3 z-30 bg-black/70 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md border border-white/10 flex items-center gap-1 shadow-lg">
+                    <i class="fas fa-fire text-orange-500"></i> TRENDING
+                </span>
+                
+                <!-- Floating decorative elements to enhance visual weight -->
+                <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-white/20 rounded-full blur-2xl"></div>
+                <div class="absolute -top-6 -left-6 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+              </div>
+              <div class="p-5">
+                <h3 class="text-xl font-bold mb-2 text-white leading-tight group-hover:text-blue-400 transition-colors">Mega Rainbow Obby</h3>
+                <p class="text-gray-400 text-sm mb-4 line-clamp-2">Jump through 50+ stages of colorful platforming fun! Reach the end for a special badge!</p>
+                <div class="flex items-center justify-between mt-auto border-t border-white/10 pt-3">
+                  <div class="flex items-center gap-4 text-xs font-bold text-gray-400">
+                    <span class="text-green-400 flex items-center gap-1.5 bg-green-400/10 px-2 py-1 rounded-md">
+                        <i class="fas fa-thumbs-up"></i> {{ ratingPercentage() }}%
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <i class="fas fa-user-friends text-blue-400"></i> {{ onlineCount() }} Active
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+        }
+        
+        @if (searchQuery().trim() !== '' && !matchesSearch('Mega Rainbow Obby', 'Obby, Parkour, Fun, Rainbow, Mega, Easy, Platformer')) {
+            <div class="col-span-full text-center py-12 text-gray-500">
+                <i class="fas fa-search text-4xl mb-4 opacity-50"></i>
+                <h3 class="text-xl font-bold text-white mb-2">No experiences found</h3>
+                <p>Try searching for different keywords.</p>
+            </div>
+        }
       </div>
     </div>
   }
@@ -131,6 +167,31 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
                               </button>
                           } @else {
                               <button (click)="buyItem('hat_defender')" class="w-full py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+                                  <i class="fas fa-shopping-cart"></i> CLAIM FREE
+                              </button>
+                          }
+                      </div>
+                  </div>
+
+                  <!-- Spring Wings -->
+                  <div class="bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl p-1 shadow-lg relative overflow-hidden group">
+                      <div class="absolute top-0 right-0 bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-bl-lg z-10 shadow-md">NEW</div>
+                      <div class="bg-[#1a1c1e] h-full rounded-lg p-6 flex flex-col relative z-0">
+                          <div class="flex-grow flex flex-col items-center text-center">
+                              <div class="w-32 h-32 bg-[#232527] rounded-full mb-4 flex items-center justify-center shadow-inner relative overflow-hidden">
+                                  <div class="absolute inset-0 bg-gradient-to-tr from-pink-500/20 to-purple-500/20 animate-pulse"></div>
+                                  <i class="fas fa-feather-alt text-5xl text-pink-400 relative z-10"></i>
+                              </div>
+                              <h3 class="text-2xl font-black text-white mb-1">Крылья Весны</h3>
+                              <p class="text-gray-400 text-sm mb-4">Живые анимированные крылья с эффектами. Почувствуй весну!</p>
+                          </div>
+                          
+                          @if (dataService.hasItem('wings_spring')) {
+                              <button disabled class="w-full py-3 bg-gray-700 text-gray-400 rounded-lg font-bold cursor-not-allowed flex items-center justify-center gap-2">
+                                  <i class="fas fa-check"></i> ALREADY OWNED
+                              </button>
+                          } @else {
+                              <button (click)="buyItem('wings_spring')" class="w-full py-3 bg-pink-600 hover:bg-pink-500 text-white rounded-lg font-bold shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
                                   <i class="fas fa-shopping-cart"></i> CLAIM FREE
                               </button>
                           }
@@ -219,7 +280,7 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
                   
                   <div class="mt-6 pt-6 border-t border-white/5 text-xs text-gray-500 font-medium flex justify-between">
                       <span>Joined Feb 2026</span>
-                      <span class="text-blue-500/50 font-mono">v0.2B</span>
+                      <span class="text-blue-500/50 font-mono">v0.3B</span>
                   </div>
               </div>
           </div>
@@ -260,6 +321,8 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
                                         <div class="w-16 h-16 rounded shadow-lg transform group-hover:scale-110 transition" [style.background-color]="'#' + item.color?.toString(16)?.padStart(6, '0')"></div>
                                      } @else if (item.id === 'hat_defender') {
                                         <i class="fas fa-hard-hat text-4xl text-[#4caf50]"></i>
+                                     } @else if (item.id === 'wings_spring') {
+                                        <i class="fas fa-feather-alt text-4xl text-pink-400"></i>
                                      }
                                  </div>
                                  
@@ -284,11 +347,56 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
       </h1>
 
       <div class="max-w-3xl mx-auto space-y-8">
-          <!-- Update 0.2B -->
+          <!-- Update 0.3B -->
           <div class="bg-[#232527] rounded-xl border border-white/5 overflow-hidden shadow-lg">
               <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex justify-between items-center">
-                  <h2 class="text-xl font-bold text-white">Update 0.2B</h2>
+                  <h2 class="text-xl font-bold text-white">Update 0.3B</h2>
                   <span class="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded">LATEST</span>
+              </div>
+              <div class="p-6">
+                  <div class="mb-6">
+                      <h3 class="text-green-400 font-bold uppercase text-xs mb-3 tracking-wider flex items-center gap-2">
+                          <i class="fas fa-plus-circle"></i> What's New
+                      </h3>
+                      <ul class="space-y-2 text-gray-300 text-sm">
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-check text-green-500 mt-1"></i>
+                              <span><strong>UI & Design:</strong> Complete visual overhaul of the main page, game cards, and top navigation for better readability and style.</span>
+                          </li>
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-check text-green-500 mt-1"></i>
+                              <span><strong>Double Jump:</strong> Added double jump capability with a spin effect! Press jump while in the air to activate.</span>
+                          </li>
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-check text-green-500 mt-1"></i>
+                              <span><strong>Character Animations:</strong> New dynamic 3D animations for running, jumping, falling, and idling (breathing).</span>
+                          </li>
+                      </ul>
+                  </div>
+
+                  <div>
+                      <h3 class="text-orange-400 font-bold uppercase text-xs mb-3 tracking-wider flex items-center gap-2">
+                          <i class="fas fa-wrench"></i> Fixes & Improvements
+                      </h3>
+                      <ul class="space-y-2 text-gray-300 text-sm">
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-bug text-orange-500 mt-1"></i>
+                              <span><strong>Anti-Spam System:</strong> Implemented a 1.5s chat cooldown to prevent spamming in global chat.</span>
+                          </li>
+                          <li class="flex items-start gap-2">
+                              <i class="fas fa-bug text-orange-500 mt-1"></i>
+                              <span>Improved mobile touch controls, fixing the jump button triggering camera movement.</span>
+                          </li>
+                      </ul>
+                  </div>
+              </div>
+          </div>
+
+          <!-- Update 0.2B -->
+          <div class="bg-[#232527] rounded-xl border border-white/5 overflow-hidden shadow-lg opacity-80">
+              <div class="bg-gradient-to-r from-gray-700 to-gray-600 px-6 py-4 flex justify-between items-center">
+                  <h2 class="text-xl font-bold text-white">Update 0.2B</h2>
+                  <span class="bg-white/10 text-white/50 text-xs font-bold px-2 py-1 rounded">PREVIOUS</span>
               </div>
               <div class="p-6">
                   <div class="mb-6">
@@ -392,6 +500,8 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
                                         <div class="w-10 h-10 rounded shadow-lg" [style.background-color]="'#' + item.color?.toString(16)?.padStart(6, '0')"></div>
                                      } @else if (item.id === 'hat_defender') {
                                         <i class="fas fa-hard-hat text-2xl text-[#4caf50]"></i>
+                                     } @else if (item.id === 'wings_spring') {
+                                        <i class="fas fa-feather-alt text-2xl text-pink-400"></i>
                                      }
                                  </div>
                                  <div class="font-bold text-white text-xs truncate">{{ item.name }}</div>
@@ -423,25 +533,25 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
       <!-- JOYSTICK ZONE (Left Bottom) -->
       <div 
         #joystickZone
-        class="absolute bottom-10 left-10 w-32 h-32 bg-white/10 rounded-full backdrop-blur-sm border border-white/20 pointer-events-auto touch-none flex items-center justify-center"
+        class="absolute bottom-12 left-12 w-36 h-36 bg-black/20 rounded-full backdrop-blur-md border-2 border-white/10 pointer-events-auto touch-none flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.3)]"
         (touchstart)="handleJoystickStart($event)"
         (touchmove)="handleJoystickMove($event)"
         (touchend)="handleJoystickEnd($event)"
       >
           <!-- Joystick Knob -->
           <div 
-            class="w-14 h-14 bg-white/80 rounded-full shadow-lg transition-transform duration-75 ease-out"
+            class="w-16 h-16 bg-white/90 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)] transition-transform duration-75 ease-out"
             [style.transform]="joystickTransform()"
           ></div>
       </div>
 
       <!-- JUMP BUTTON (Right Bottom) -->
       <div 
-        class="absolute bottom-12 right-10 w-24 h-24 bg-white/20 rounded-full backdrop-blur-sm border border-white/30 pointer-events-auto touch-none active:bg-white/40 active:scale-95 transition flex items-center justify-center"
+        class="jump-btn absolute bottom-16 right-12 w-28 h-28 bg-black/20 rounded-full backdrop-blur-md border-2 border-white/10 pointer-events-auto touch-none active:bg-white/30 active:scale-90 transition-all duration-150 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.3)]"
         (touchstart)="handleMobileJump($event)"
       >
-          <div class="w-20 h-20 rounded-full border-2 border-white/50 flex items-center justify-center">
-             <i class="fas fa-arrow-up text-white/90 text-3xl"></i>
+          <div class="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center">
+             <i class="fas fa-arrow-up text-white text-4xl drop-shadow-lg"></i>
           </div>
       </div>
   </div>
@@ -584,7 +694,7 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
                      <i class="fas fa-cog text-xl"></i>
                  </button>
                  
-                 <div class="mt-auto text-[10px] text-gray-600 font-mono font-bold mb-2">v0.2B</div>
+                 <div class="mt-auto text-[10px] text-gray-600 font-mono font-bold mb-2">v0.3B</div>
              </div>
 
              <!-- Content -->
@@ -680,12 +790,12 @@ type MenuTab = 'PLAYERS' | 'SETTINGS';
                  }
 
                  <!-- Actions -->
-                 <div class="flex justify-end gap-4">
+                 <div class="flex justify-end gap-4 mt-auto">
                      <button (click)="resetCharacter()" class="px-6 py-3 rounded-lg border border-white/20 text-white font-bold hover:bg-white/10 transition flex items-center gap-2">
                          <i class="fas fa-skull"></i> Reset Character
                      </button>
                      <button (click)="exitGame()" class="px-6 py-3 rounded-lg bg-red-600 text-white font-bold hover:bg-red-500 transition shadow-lg flex items-center gap-2">
-                         <i class="fas fa-sign-out-alt"></i> Leave
+                         <i class="fas fa-sign-out-alt"></i> Leave Game
                      </button>
                  </div>
              </div>
@@ -836,6 +946,7 @@ export class AppComponent implements OnDestroy {
   chatMessages = this.firebaseService.chatMessages;
   unreadMessagesCount = signal(0);
   private lastMsgCount = 0;
+  private lastMessageTime = 0;
   
   // Profile
   isEditingProfile = signal(false);
@@ -847,6 +958,13 @@ export class AppComponent implements OnDestroy {
   // Discovery
   gameStats = this.firebaseService.gameStats;
   hasVoted = signal(false);
+  searchQuery = signal('');
+
+  matchesSearch(title: string, tags: string): boolean {
+      const q = this.searchQuery().toLowerCase().trim();
+      if (!q) return true;
+      return title.toLowerCase().includes(q) || tags.toLowerCase().includes(q);
+  }
 
   // References
   @ViewChild('gameContainer') gameContainer!: ElementRef;
@@ -881,25 +999,25 @@ export class AppComponent implements OnDestroy {
   private lastTouchY = 0;
   private lookTouchId: number | null = null;
   
-  constructor() {
-    effect(() => {
-        // Chat listener
-        const msgs = this.chatMessages();
-        // Only increment if we have NEW messages and chat is closed
-        if (msgs.length > this.lastMsgCount) {
-            if (!this.isChatVisible()) {
-                this.unreadMessagesCount.update(c => c + (msgs.length - this.lastMsgCount));
+    constructor() {
+        effect(() => {
+            // Chat listener
+            const msgs = this.chatMessages();
+            // Only increment if we have NEW messages and chat is closed
+            if (msgs.length > this.lastMsgCount) {
+                if (!this.isChatVisible()) {
+                    this.unreadMessagesCount.update(c => c + (msgs.length - this.lastMsgCount));
+                }
+                this.lastMsgCount = msgs.length;
             }
-            this.lastMsgCount = msgs.length;
-        }
-    }, { allowSignalWrites: true });
+        }, { allowSignalWrites: true });
 
-    // Auto-Login Check
-    const u = this.dataService.user();
-    if (u.username && u.username !== 'Guest') {
-        this.currentView.set('DISCOVERY');
+        // Auto-Login Check
+        const u = this.dataService.user();
+        if (u.username && u.username !== 'Guest') {
+            this.currentView.set('DISCOVERY');
+        }
     }
-  }
 
   buyItem(id: string) {
       this.dataService.buyItem(id);
@@ -1041,6 +1159,15 @@ export class AppComponent implements OnDestroy {
 
   sendMessage() {
       if (!this.chatInput.trim()) return;
+      
+      const now = Date.now();
+      if (now - this.lastMessageTime < 1500) {
+          // Spam protection: wait 1.5 seconds between messages
+          // Optional: Add a local "slow down" system message temporarily
+          return;
+      }
+      this.lastMessageTime = now;
+
       this.firebaseService.sendMessage(this.dataService.user().username, this.chatInput);
       
       // Show bubble locally immediately for responsiveness
@@ -1051,6 +1178,10 @@ export class AppComponent implements OnDestroy {
 
   onChatFocus() {
       // Logic for typing state can go here
+      // Release pointer lock when typing
+      if (document.pointerLockElement === document.body) {
+          document.exitPointerLock();
+      }
   }
   
   onChatBlur() {
@@ -1087,7 +1218,9 @@ export class AppComponent implements OnDestroy {
     for (let i = 0; i < e.changedTouches.length; i++) {
       const t = e.changedTouches[i];
       // If touch is on the right half of the screen and we don't have a look touch yet
-      if (t.clientX > window.innerWidth / 2 && this.lookTouchId === null) {
+      // AND it's not starting on the jump button
+      const target = t.target as HTMLElement;
+      if (t.clientX > window.innerWidth / 2 && this.lookTouchId === null && (!target || !target.closest('.jump-btn'))) {
         this.lookTouchId = t.identifier;
         this.lastTouchX = t.clientX;
         this.lastTouchY = t.clientY;

@@ -164,7 +164,7 @@ export class ThreeProfileService {
         torso.material.color.setHex(clothesItem.color);
     }
 
-    // 2. Update Accessories (Hat)
+    // 2. Update Accessories
     const head = this.playerGroup.children.find((c: any) => c.geometry && c.position.y > 2); // Find head mesh
     
     // Remove old accessories
@@ -201,6 +201,41 @@ export class ThreeProfileService {
             head.add(hatGroup);
         }
     }
+
+    if (torso) {
+        const oldWings = torso.getObjectByName('wings_spring');
+        if (oldWings) torso.remove(oldWings);
+
+        if (user.avatar.accessories?.includes('wings_spring')) {
+            const wingsGroup = new THREE.Group();
+            wingsGroup.name = 'wings_spring';
+            
+            const wingMat = new THREE.MeshLambertMaterial({ 
+                color: 0xffb7c5, 
+                transparent: true, 
+                opacity: 0.8,
+                emissive: 0xff69b4,
+                emissiveIntensity: 0.5,
+                side: THREE.DoubleSide
+            });
+
+            const wingGeoL = new THREE.BoxGeometry(1.8, 2.2, 0.05);
+            wingGeoL.translate(0.9, 0, 0); // Pivot at the edge
+            const wingL = new THREE.Mesh(wingGeoL, wingMat);
+            wingL.name = 'wingL';
+            wingL.position.set(0, 0.2, -0.6);
+
+            const wingGeoR = new THREE.BoxGeometry(1.8, 2.2, 0.05);
+            wingGeoR.translate(-0.9, 0, 0); // Pivot at the edge
+            const wingR = new THREE.Mesh(wingGeoR, wingMat);
+            wingR.name = 'wingR';
+            wingR.position.set(0, 0.2, -0.6);
+
+            wingsGroup.add(wingL);
+            wingsGroup.add(wingR);
+            torso.add(wingsGroup);
+        }
+    }
   }
 
   animate = () => {
@@ -214,6 +249,20 @@ export class ThreeProfileService {
         if(armL) armL.rotation.z = Math.sin(t) * 0.05 + 0.1;
         if(armR) armR.rotation.z = -Math.sin(t) * 0.05 - 0.1;
         
+        // Wings animation
+        const torso = this.playerGroup.getObjectByName('torso');
+        if (torso) {
+            const wings = torso.getObjectByName('wings_spring');
+            if (wings) {
+                const wingL = wings.getObjectByName('wingL');
+                const wingR = wings.getObjectByName('wingR');
+                // Flapping motion
+                const flap = Math.sin(t * 4) * 0.3 + 0.3;
+                if (wingL) wingL.rotation.y = -flap;
+                if (wingR) wingR.rotation.y = flap;
+            }
+        }
+
         // Slight rotation if not dragging
         if (!this.isDragging) {
             this.playerGroup.rotation.y += 0.005;
